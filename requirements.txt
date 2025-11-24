@@ -1,0 +1,7 @@
+faiss-cpu
+sentence-transformers
+pdfplumber
+requests
+tqdm
+streamlit
+arxiv
