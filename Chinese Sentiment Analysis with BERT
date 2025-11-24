@@ -1,0 +1,31 @@
+FEATURES
+自动数据清洗、编码与持久化（Arrow Dataset）
+BERT 微调（两分类：Positive / Negative）
+GPU / CPU 自动切换
+自动保存最佳模型（按最小 loss）
+测试集评估（Accuracy）
+支持单句/批量预测
+
+
+STRUCTURE
+project/
+│
+├── 2.资料/
+│   └── 2.数据集/
+│       └── 1.评论数据集/
+│           └── online_shopping_10_cats.csv
+│
+├── arrow_dataset/            # 自动生成：预处理后的 dataset
+├── bert_sentiment_model/     # 自动生成：最佳模型参数
+│
+├── main.py                   # 主程序入口（训练+评估+预测）
+
+
+
+Data Processing
+读取 CSV 数据集
+删除无关字段（cat）
+标签转换为 ClassLabel（negative / positive）
+Stratified 分层抽样切分训练集 & 测试集
+BERT tokenizer 编码
+保存 Arrow dataset
