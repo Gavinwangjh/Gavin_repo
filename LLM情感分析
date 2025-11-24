@@ -1,0 +1,23 @@
+本项目构建了一个完整的 中文情感分析大模型系统：
+SFT 训练数据构造（JSONL）
+基于 Qwen2.5-1.5B 的 LoRA 微调（CPU 也可运行）
+FAISS 语义检索库构建（RAG）
+微调模型 + RAG 推理
+微调前/后模型 accuracy 对比
+目标任务：电商评论情感分类（正面 / 负面 / 中性）
+project/
+│
+├── data/
+│   └── online_shopping_10_cats.csv
+│
+├── sft_100.jsonl                 # SFT 训练集自动生成
+├── sft_out/                      # LoRA 微调输出
+│
+├── reviews.index                 # FAISS 检索库
+├── reviews.parquet               # 原始文本库
+│
+├── generate_sft.py               # 生成 JSONL SFT 数据
+├── train_lora_cpu.py             # LoRA 微调脚本（CPU 支持）
+├── build_faiss.py                # 构建向量检索库
+├── rag_infer.py                  # RAG + LLM 进行情感分析
+├── eval_accuracy.py              # 微调前后 accuracy 对比
