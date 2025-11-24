@@ -1,3 +1,5 @@
+Chinese Sentiment Analysis with BERT
+
 FEATURES
 自动数据清洗、编码与持久化（Arrow Dataset）
 BERT 微调（两分类：Positive / Negative）
