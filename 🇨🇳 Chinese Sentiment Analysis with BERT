@@ -1,0 +1,7 @@
+Features
+自动数据清洗、编码与持久化（Arrow Dataset）
+BERT 微调（两分类：Positive / Negative）
+GPU / CPU 自动切换
+自动保存最佳模型（按最小 loss）
+测试集评估（Accuracy）
+支持单句/批量预测
