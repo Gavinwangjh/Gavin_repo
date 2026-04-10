@@ -1,0 +1,96 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.bak
+*.user
+
+# Env files
+.env
+.env.*
+../.env
+# Ignore all .env files except .env.example which contains the template for environment variables
+!.env.example
+
+
+# Secrets
+*.pfx
+*.cert
+
+# Logs
+*.log
+logs/
+
+# Docker
+*.pid
+
+# Temporary / backups
+backup/
+tmp/
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+
+# Virtual env (uv)
+backend-python/.venv/
+env/
+venv/
+
+# uv
+.python_packages
+
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Alembic
+alembic/versions/*.pyc
+../alembic/.env
+/alembic/.mypy_cache/
+.alembic.ini
+
+# Tests / coverage
+.pytest_cache/
+.coverage*
+htmlcov/
+
+# Type checkers
+.mypy_cache/
+.pyright/
+.dmypy.json
+dmypy.json
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Other
+local_test/
+local_files/

@@ -1,0 +1,64 @@
+# Virtual environments
+.venv
+venv
+env
+
+# Python cache files
+__pycache__
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info
+*.egg
+.eggs
+dist
+build
+
+# Build tools
+.git
+.gitignore
+.gitattributes
+.pre-commit-config.yaml
+
+# IDE files
+.idea
+.vscode
+*.iml
+.DS_Store
+Thumbs.db
+
+# Testting and coverage
+.coverage
+.coverage.*
+htmlcov
+.mypy_cache
+.ruff_cache
+.pyright
+.pytest_cache
+
+# Logs and runtime files
+*.log
+logs
+
+# Env files
+.env
+.env.*
+!.env.example
+
+# Docker files
+docker
+docker-compose*.yml
+Dockerfile*
+
+# Documentation
+docs
+*.md
+!README.md
+
+# Temp files
+*.tmp
+*.bak
+*.swp
+tmp
+temp

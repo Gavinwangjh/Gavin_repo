@@ -1,0 +1,157 @@
+# docker/docker-compose.yml
+#
+# Execute with: docker-compose -f docker/docker-compose.yml up -d
+# Or simpler: make start (see Makefile)
+#
+# Services:
+# postgres: The database service using the official PostgreSQL image with pgvector extension.
+# temporal: Temporal server (using the same postgres database) for workflow orchestration.
+# temporal-ui: A web-based UI for monitoring Temporal temporal-workflows.md on http://localhost:8080.
+# app: Python application with hot-reloading for development, connected to the same database and Temporal server.
+
+name: ${PROJECT_NAME}
+services:
+
+    # ───────────────────────────────────────────────────────────
+    # POSTGRES + PGVECTOR
+    # Official pgvector image — no manual extension compilation needed.
+    # DB_USER / DB_PASSWORD / DB_NAME are read by the
+    # image on first start to create the user and database automatically.
+    # ───────────────────────────────────────────────────────────
+    postgres:
+      image: pgvector/pgvector:pg16
+      container_name: ${PROJECT_NAME}_postgres
+      restart: unless-stopped
+      environment:
+        POSTGRES_USER: ${DB_USER}
+        POSTGRES_PASSWORD: ${DB_PASSWORD}
+        POSTGRES_DB: ${DB_NAME}
+      ports:
+        - "${DB_PORT:-5432}:5432"
+      volumes:
+        - postgres_data:/var/lib/postgresql/data
+        # Init scripts are executed once at first startup (alphabetical order)
+        - "./init-scripts:/docker-entrypoint-initdb.d"
+      healthcheck:
+        test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+        interval: 5s
+        timeout: 5s
+        retries: 10
+        start_period: 10s
+      networks:
+        - sandbox_net
+
+    # ───────────────────────────────────────────────────────────
+    # TEMPORAL SERVER
+    # Uses the same Postgres instance but creates its own databases
+    # (temporal + temporal_visibility) on first start via SKIP_DB_CREATE=false.
+    # DB_PORT here is always 5432 — the internal container port, not the
+    # externally exposed one defined in DB_PORT.
+    # ───────────────────────────────────────────────────────────
+    temporal:
+      image: temporalio/auto-setup:1.25.2
+      container_name: ${PROJECT_NAME}_temporal
+      restart: unless-stopped
+      depends_on:
+        postgres:
+          condition: service_healthy
+      environment:
+        # Temporal uses the same postgres server, but different database (schema) for its internal data
+        - DB=postgres12
+        - DB_PORT=${DB_PORT}
+        - POSTGRES_USER=${DB_USER}
+        - POSTGRES_PWD=${DB_PASSWORD}
+        - POSTGRES_SEEDS=postgres             # hostname of the postgres service in docker-compose
+        - DEFAULT_NAMESPACE=${TEMPORAL_NAMESPACE:-default}
+        - DEFAULT_NAMESPACE_RETENTION=72h
+        - DYNAMIC_CONFIG_FILE_PATH=/etc/temporal/config/dynamicconfig/development.yaml
+        # Visibility — Temporal uses the same postgres database for workflow search
+        - ENABLE_ES=false
+        - SKIP_DB_CREATE=false # Enable for Temporal to create its own database/schema, otherwise it will use the default one specified in POSTGRES_DB
+      ports:
+        - "${TEMPORAL_PORT:-7233}:7233"
+      volumes:
+        - ./temporal/dynamicconfig:/etc/temporal/config/dynamicconfig
+      healthcheck:
+        test: [ "CMD", "tctl", "--address", "localhost:7233", "cluster", "health" ]
+        interval: 10s
+        timeout: 10s
+        retries: 10
+        start_period: 30s
+      networks:
+        - sandbox_net
+
+    # ─────────────────────────────────────────────────────────────
+    # TEMPORAL UI
+    # Available on http://localhost:8080
+    # Visual display of  temporal-workflows.md, activities, history, and more
+    # Connects to Temporal server to fetch data
+    # ─────────────────────────────────────────────────────────────
+    temporal-ui:
+      image: temporalio/ui:2.31.2
+      container_name: ${PROJECT_NAME}_temporal_ui
+      restart: unless-stopped
+      depends_on:
+        temporal:
+          condition: service_started
+      environment:
+        - TEMPORAL_ADDRESS=temporal:7233
+        - TEMPORAL_CORS_ORIGINS=http://localhost:3000,http://localhost:8000
+        - TEMPORAL_NOTIFY_ON_NEW_VERSION=false
+      ports:
+        - "${TEMPORAL_UI_PORT:-8080}:8080"
+      networks:
+        - sandbox_net
+
+    # ───────────────────────────────────────────────────────────
+    # APP — Python worker
+    # Source code is mounted from the host — saving a file is reflected
+    # instantly without rebuilding the image.
+    # The /app/.venv anonymous volume prevents the host's virtual
+    # environment (built for macOS/Windows) from overwriting the
+    # container's environment (built for Linux).
+    # ───────────────────────────────────────────────────────────
+    app:
+      build:
+        context: ..                   # root of the project
+        dockerfile: docker/Dockerfile
+      container_name: ${PROJECT_NAME}_app
+      restart: unless-stopped
+      command: uv run python main.py
+      depends_on:
+        postgres:
+          condition: service_healthy
+        temporal:
+          condition: service_started
+      environment:
+        - UV_LINK_MODE=copy
+        - DATABASE_URL=postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@postgres:${DB_PORT}/${DB_NAME}
+        - TEMPORAL_HOST=temporal:7233
+        - APP_ENV=${APP_ENV:-local}
+        - PYTHONDONTWRITEBYTECODE=1
+        - PYTHONUNBUFFERED=1           # stdout/stderr flush firstly — critical for docker logs
+      volumes:
+        # Hot reload: local code is mounted directly into the container
+        # Meaning: save file → immediately active, no docker compose build
+        - ..:/app
+        # Exclude virtual environment from host to avoid conflicts with container's Python environment
+        - /app/.venv  # Protects against accidentally mounting host's virtual environment, which can cause permission issues and conflicts with container's Python environment
+      working_dir: /app
+      networks:
+        - sandbox_net
+      # Run as current user to avoid permission issues with mounted volumes (e.g., logs, data).
+      # On Mac/Windows, this is less relevant due to how Docker handles file permissions, but it's crucial for Linux hosts.
+      user: "${UID:-1000}:${GID:-1000}"
+
+# ─────────────────────────────────────────────────────────────
+# VOLUMES
+# Named volumes are managed by Docker and stored in Docker's storage location (e.g., /var/lib/docker/volumes/)
+# docker compose down -v  ← removes containers and networks, but keeps volumes intact, allowing data persistence across restarts
+# ─────────────────────────────────────────────────────────────
+volumes:
+  postgres_data:
+
+
+networks:
+  sandbox_net:
+    driver: bridge
