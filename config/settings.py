@@ -20,10 +20,11 @@ class Settings(BaseSettings):
     DB_PASSWORD: str = Field(..., description="Database password.")
     DB_HOST: str = Field(..., description="Database host.")
     DB_NAME: str = Field(..., description="Database host URL.")
-    DB_PORT: int = Field(..., description="Database port.")
+    DB_PORT: int = 5432  # This will be overridden by environment variable if needed.
 
     # Temporal server settings
     TEMPORAL_PORT: int = Field(..., description="Temporal server port.")
+    TEMPORAL_HOST: str = Field(..., description="Temporal server host.")
     TEMPORAL_NAMESPACE: str = Field(..., description="Temporal namespace to use.")
     POSTGRES_SEEDS: str = Field(
         ..., description="Comma-separated list of PostgreSQL seed hosts for Temporal server."
@@ -50,7 +51,7 @@ class Settings(BaseSettings):
         Example:
             postgresql://sandbox:secret@postgres:5432/mydb
         """
-        return f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}@postgres:{self.DB_PORT}/{self.DB_NAME}"
+        return f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
     @computed_field
     @property
@@ -65,7 +66,7 @@ class Settings(BaseSettings):
     @property
     def temporal_host(self) -> str:
         """Temporal address inside docker network."""
-        return f"temporal:{self.TEMPORAL_PORT}"
+        return f"{self.TEMPORAL_HOST}:{self.TEMPORAL_PORT}"
 
     @computed_field
     @property

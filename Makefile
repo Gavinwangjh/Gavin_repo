@@ -6,8 +6,12 @@
 .PHONY: help setup start stop restart build ps logs logs-app logs-temporal \
         migrate migrate-down migrate-create migrate-history \
         test test-fast lint format shell-app shell-db clean reset
-
+# Paths
 ROOT_DIR := $(shell pwd)
+ENV_FILE := .env
+DOCKER_DIR := docker
+DOCKER_ENV := $(DOCKER_DIR)/.env
+
 COMPOSE = docker compose -f docker/docker-compose.yml --env-file $(shell pwd)/.env
 APP_SERVICE = app
 DB_SERVICE = postgres
@@ -25,10 +29,10 @@ setup:          ## Initial setup — run once after cloning
 		echo ""; \
 		echo "=== INITIAL PROJECT SETUP ==="; \
 		echo ""; \
-		read -p "  Project name (e.g. unisa-g1): " pname; \
+		read -p "  Project name (e.g. unisa-07): " pname; \
 		while [ -z "$$pname" ]; do \
 			echo "  Project name cannot be empty."; \
-			read -p "  Project name (e.g. unisa-g1): " pname; \
+			read -p "  Project name (e.g. unisa-07): " pname; \
 		done; \
 		read -p "  External Postgres port [5432]: " pport; \
 		pport=$${pport:-5432}; \
@@ -57,6 +61,7 @@ setup:          ## Initial setup — run once after cloning
 	@echo "Installing pre-commit hooks..."
 	@uv run pre-commit install
 	@uv run pre-commit install --hook-type pre-push
+	@ln -sf ../$(ENV_FILE) $(DOCKER_ENV)
 	@echo ""
 	@echo "Done. Next step: make start"
 
