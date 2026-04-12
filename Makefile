@@ -60,7 +60,6 @@ setup:          ## Initial setup — run once after cloning
 	@echo "Installing pre-commit hooks..."
 	@uv run pre-commit install
 	@uv run pre-commit install --hook-type pre-push
-	@ln -sf ../$(ENV_FILE) $(DOCKER_ENV)
 	@echo ""
 	@echo "Done. Next step: make start"
 
