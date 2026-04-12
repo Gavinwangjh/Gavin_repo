@@ -77,7 +77,7 @@ services:
       ports:
         - "${TEMPORAL_PORT:-7233}:7233"
       volumes:
-        - ./temporal/dynamicconfig:/etc/temporal/config/dynamicconfig
+        - ./config/temporal/dynamicconfig:/etc/temporal/config/dynamicconfig
 
       networks:
         - sandbox_net
@@ -114,8 +114,8 @@ services:
     # ───────────────────────────────────────────────────────────
     app:
       build:
-        context: ..                   # root of the project
-        dockerfile: docker/Dockerfile
+        context: .                   # root of the project
+        dockerfile: Dockerfile
       container_name: ${PROJECT_NAME}_app
       restart: unless-stopped
       command: uv run python main.py
@@ -125,8 +125,9 @@ services:
         temporal:
           condition: service_started
       environment:
+        - UV_NO_SYNC=1
         - UV_LINK_MODE=copy
-        - DATABASE_URL=postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@postgres:${DB_PORT}/${DB_NAME}
+        - DATABASE_URL=postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
         - TEMPORAL_HOST=temporal
         - TEMPORAL_PORT=7233
         - APP_ENV=${APP_ENV:-local}
@@ -135,7 +136,7 @@ services:
       volumes:
         # Hot reload: local code is mounted directly into the container
         # Meaning: save file → immediately active, no docker compose build
-        - ..:/app
+        - .:/app
         # Exclude virtual environment from host to avoid conflicts with container's Python environment
         - /app/.venv  # Protects against accidentally mounting host's virtual environment, which can cause permission issues and conflicts with container's Python environment
       working_dir: /app

@@ -51,9 +51,7 @@ venv/
 
 # Alembic
 alembic/versions/*.pyc
-../alembic/.env
 /alembic/.mypy_cache/
-.alembic.ini
 
 # Tests / coverage
 .pytest_cache/

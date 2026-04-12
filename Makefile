@@ -9,12 +9,11 @@
 # Paths
 ROOT_DIR := $(shell pwd)
 ENV_FILE := .env
-DOCKER_DIR := docker
-DOCKER_ENV := $(DOCKER_DIR)/.env
 
-COMPOSE = docker compose -f docker/docker-compose.yml --env-file $(shell pwd)/.env
+COMPOSE = docker compose --env-file .env
 APP_SERVICE = app
-DB_SERVICE = postgres
+DB_SERVICE = db
+TEMPORAL_SERVICE = temporal
 
 # ─── Setup ───────────────────────────────────────────────────
 
@@ -34,7 +33,7 @@ setup:          ## Initial setup — run once after cloning
 			echo "  Project name cannot be empty."; \
 			read -p "  Project name (e.g. unisa-07): " pname; \
 		done; \
-		read -p "  External Postgres port [5432]: " pport; \
+		read -p "  External DB port [5432]: " pport; \
 		pport=$${pport:-5432}; \
 		read -p "  External Temporal UI port [8080]: " uiport; \
 		uiport=$${uiport:-8080}; \
@@ -76,7 +75,7 @@ start:          ## Start all services
 	$(COMPOSE) up -d
 	@echo ""
 	@echo "  Temporal UI -> http://localhost:$$(grep TEMPORAL_UI_PORT .env | cut -d= -f2)"
-	@echo "  Postgres    -> localhost:$$(grep ^POSTGRES_PORT .env | cut -d= -f2)"
+	@echo "  DB          -> localhost:$$(grep ^DB_PORT .env | cut -d= -f2)"
 	@echo "  Logs        -> make logs-app"
 
 
@@ -137,7 +136,7 @@ shell-app:      ## Open shell inside app container
 	$(COMPOSE) exec $(APP_SERVICE) /bin/bash
 
 shell-db:       ## Open psql shell inside database container
-	$(COMPOSE) exec $(DB_SERVICE) psql -U $${POSTGRES_USER:-sandbox} -d $${POSTGRES_DB:-sandbox_db}
+	$(COMPOSE) exec $(DB_SERVICE) psql -U $${DB_USER:-sandbox} -d $${DB_NAME:-sandbox_db}
 
 # ─── Cleanup ─────────────────────────────────────────────────
 

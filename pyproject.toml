@@ -9,7 +9,6 @@ dependencies = [
     "alembic>=1.18.4",
     "asyncpg>=0.31.0",
     "pgvector>=0.4.2",
-    "pre-commit>=4.5.1",
     "psycopg2-binary>=2.9.11",
     "pydantic>=2.12.5",
     "pydantic-settings>=2.13.1",
@@ -21,6 +20,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "pre-commit>=4.5.1",
     "pytest>=9.0.2",
     "ruff>=0.15.8",
 ]

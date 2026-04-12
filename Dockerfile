@@ -19,6 +19,9 @@ WORKDIR /app
 # Install uv \
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
+# Compile Python bytecode during installation for faster startup
+ENV UV_COMPILE_BYTECODE=1
+
 # Copy dependency files separately for better caching
 # If code changes and dependencies don't, Docker can reuse the cached layer
 COPY pyproject.toml uv.lock* ./
@@ -45,7 +48,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 
 # Expose the port the app runs on
-EXPOSE 8000
+# EXPOSE 8000
 
 # Command to run the application
-CMD ["uv", "run", "python", "-m", "main"]
+CMD ["uv", "run", "python", "main.py"]
