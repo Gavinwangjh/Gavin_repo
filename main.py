@@ -16,7 +16,9 @@ from temporalio.worker import Worker
 
 from config.logger import setup_logging
 from src.temporal.activities.example_activity import example_activity
+from src.temporal.activities.extract_organisations import extract_organisations
 from src.temporal.client import get_temporal_client
+from src.temporal.workflows.etl_workflow import ETLWorkflow
 from src.temporal.workflows.example_workflow import ExampleWorkflow
 
 setup_logging()
@@ -31,8 +33,8 @@ async def main():
     worker = Worker(
         client,
         task_queue="sandbox-task-queue",
-        workflows=[ExampleWorkflow],
-        activities=[example_activity],
+        workflows=[ExampleWorkflow, ETLWorkflow],
+        activities=[example_activity, extract_organisations],
     )
 
     log.info("Worker started", task_queue="sandbox-task-queue")

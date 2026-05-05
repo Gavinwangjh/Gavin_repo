@@ -8,10 +8,11 @@ Example Temporal workflow demonstrating basic workflow and activity usage.
 
 from datetime import timedelta
 
-import structlog
 from temporalio import workflow
 
 with workflow.unsafe.imports_passed_through():
+    import structlog
+
     from src.temporal.activities.example_activity import example_activity
 
 log = structlog.get_logger(__name__)
