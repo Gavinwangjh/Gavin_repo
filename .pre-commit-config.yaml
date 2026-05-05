@@ -15,6 +15,6 @@ repos:
     hooks:
       - id: no-push-to-main
         name: Prevent direct push to main
-        entry: bash -c 'if [ "$(git rev-parse --abbrev-ref HEAD)" = "main" ]; then echo "STOP! Do not push directly on main branch. Checkout development branch."; exit 1; fi'
+        entry: python -c "import subprocess,sys; b=subprocess.check_output(['git','rev-parse','--abbrev-ref','HEAD']).decode().strip(); print('STOP! Do not push directly to main. Use a feature branch.') if b=='main' else None; sys.exit(1 if b=='main' else 0)"
         language: system
         stages: [pre-push]
