@@ -25,7 +25,7 @@ async def extract_organisations(source: str, limit: int = 500, name_keyword: str
             if len(data) >= limit:
                 break
 
-            name = (row.get("Organisation Name") or "").strip()
+            name = (row.get("Primary Organisation") or row.get("Company Name") or "").strip()
 
             # 🔹 filtering（防止 name 是 None）
             if name_keyword and name_keyword.lower() not in name.lower():
@@ -34,7 +34,7 @@ async def extract_organisations(source: str, limit: int = 500, name_keyword: str
             data.append(
                 {
                     "organisation_name": name,
-                    "organisation_id": row.get("ABN"),
+                    "organisation_id": row.get("ABN") or row.get("Primary ABN") or row.get("ï»¿Primary ABN"),
                     "country": "au",
                     "country_code": "AU",
                     # 👇 占位字段

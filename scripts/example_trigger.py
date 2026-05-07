@@ -1,36 +1,37 @@
-"""
-Run this script with `temporal trigger run example_trigger.py` to see the trigger in action.
-It will print "Hello, Temporal!" every 5 seconds.
-How to run:
-    make shell-app
-    python  src/temporal/scripts/example_trigger.py
-
-Or directly with Temporal CLI:
-    uv run python src/temporal/scripts/example_trigger.py
-
-Then open: http://localhost:8080/
-"""
-
+import asyncio
 import uuid
 
 import structlog
 from temporalio.client import Client
 
-from src.temporal.workflows.example_workflow import ExampleWorkflow
+from src.temporal.workflows.etl_workflow import ETLWorkflow
 
 log = structlog.get_logger(__name__)
 
 
-async def run_example_trigger(client: Client, name: str = "User") -> str:
-    """Connects to the Temporal server, starts an instance of the ExampleWorkflow,
-    and waits for the result."""
+async def run_etl_trigger(client: Client, source: str = "au") -> dict:
+    """Starts the ETL workflow and waits for the result."""
 
-    workflow_id = f"example-{uuid.uuid4()}"
+    workflow_id = f"etl-{source}-{uuid.uuid4()}"
 
-    # Run the workflow and wait for the result
-    return await client.execute_workflow(
-        ExampleWorkflow.run,
-        name,
+    print(f"Starting ETL workflow: {workflow_id}")
+
+    result = await client.execute_workflow(
+        ETLWorkflow.run,
+        source,
         id=workflow_id,
         task_queue="sandbox-task-queue",
     )
+
+    print(f"ETL workflow completed: {workflow_id}")
+    return result
+
+
+async def main() -> None:
+    client = await Client.connect("temporal:7233", namespace="default")
+    result = await run_etl_trigger(client, source="au")
+    print(f"Workflow result: {result}")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
