@@ -27,7 +27,7 @@ ENV UV_COMPILE_BYTECODE=1
 COPY pyproject.toml uv.lock* ./
 
 # Install Python dependencies using uv
-RUN uv sync --frozen --no-dev
+RUN uv sync --frozen --no-dev 
 
 # Copy the rest of the application code
 COPY . .
@@ -51,4 +51,4 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # EXPOSE 8000
 
 # Command to run the application
-CMD ["uv", "run", "python", "main.py"]
+CMD ["python", "main.py"]
