@@ -72,7 +72,7 @@ class Settings(BaseSettings):
     @property
     def temporal_host_local(self) -> str:
         """Temporal address on local PC."""
-        return f"localhohst:{self.TEMPORAL_PORT}"
+        return f"localhost:{self.TEMPORAL_PORT}"
 
     model_config = SettingsConfigDict(
         env_file=_ROOT_DIR / ".env",

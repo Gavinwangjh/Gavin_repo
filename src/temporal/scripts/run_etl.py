@@ -3,22 +3,52 @@ import uuid
 
 from temporalio.client import Client
 
-from src.temporal.workflows.etl_workflow import ETLWorkflow
+from src.temporal.workflows.etl_workflow import (
+    ETLWorkflow,
+)
 
 
-async def run(source: str):
-    # ✅ 先连接 Temporal
+async def run():
+
+    # =====================================================
+    # Connect to Temporal
+    # =====================================================
+
     client = await Client.connect("localhost:7233")
+
+    # =====================================================
+    # Dynamic workflow parameters
+    # =====================================================
+
+    workflow_params = {
+        # 👇 data source
+        "source": "au",
+        # 👇 control extraction size
+        "limit": 5,
+        # 👇 optional keyword filtering
+        # "name_keyword": "care",
+    }
+
+    # =====================================================
+    # Execute workflow
+    # =====================================================
 
     result = await client.execute_workflow(
         ETLWorkflow.run,
-        source,
-        id=f"etl-{source}-{uuid.uuid4()}",
+        workflow_params,
+        id=(f"etl-{workflow_params['source']}-{uuid.uuid4()}"),
         task_queue="sandbox-task-queue",
     )
+
+    # =====================================================
+    # Output result
+    # =====================================================
 
     print(result)
 
 
-# ✅ 指定数据源
-asyncio.run(run("au"))  # 改成 "au" / "uk"
+# =========================================================
+# Run ETL
+# =========================================================
+
+asyncio.run(run())

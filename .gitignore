@@ -1,94 +1,141 @@
+# =========================
 # OS
+# =========================
 .DS_Store
 Thumbs.db
+Desktop.ini
 
-# IDE
+# =========================
+# IDE / Editor
+# =========================
 .vscode/
 .idea/
 *.swp
+*.swo
 *.bak
 *.user
 
-# Env files
+# =========================
+# Environment Variables
+# =========================
 .env
 .env.*
 ../.env
-# Ignore all .env files except .env.example which contains the template for environment variables
+
+# Keep template env file
 !.env.example
 
-
-# Secrets
+# =========================
+# Secrets / Certificates
+# =========================
 *.pfx
 *.cert
+*.pem
+*.key
 
+# =========================
 # Logs
+# =========================
 *.log
 logs/
 
-# Docker
+# =========================
+# Docker / Runtime
+# =========================
 *.pid
 
-# Temporary / backups
+# =========================
+# Temporary / Cache / Backup
+# =========================
 backup/
 tmp/
+temp/
+*.tmp
+*.temp
 
+# =========================
 # Python
+# =========================
 __pycache__/
 *.py[cod]
 *.so
+*.pyd
+.python_packages/
 
-# Virtual env (uv)
-backend-python/.venv/
+# =========================
+# Virtual Environments
+# =========================
+.conda/
 env/
 venv/
+.venv/
+backend-python/.venv/
 
-# uv
-.python_packages
-
-
+# =========================
 # Jupyter Notebook
-.ipynb_checkpoints
+# =========================
+.ipynb_checkpoints/
 
+# =========================
 # Alembic
+# =========================
 alembic/versions/*.pyc
 /alembic/.mypy_cache/
 
-# Tests / coverage
+# =========================
+# Tests / Coverage
+# =========================
 .pytest_cache/
 .coverage*
 htmlcov/
 
-# Type checkers
+# =========================
+# Type Checkers
+# =========================
 .mypy_cache/
 .pyright/
 .dmypy.json
 dmypy.json
 
-# Build artifacts
+# =========================
+# Build Artifacts
+# =========================
 build/
 dist/
 *.egg-info/
 
-# Installer logs
+# =========================
+# Installer Logs
+# =========================
 pip-log.txt
 pip-delete-this-directory.txt
 
+# =========================
 # Translations
+# =========================
 *.mo
 *.pot
 
-# Django stuff:
+# =========================
+# Django
+# =========================
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
 
-# Flask stuff:
+# =========================
+# Flask
+# =========================
 instance/
 .webassets-cache
 
-# Scrapy stuff:
+# =========================
+# Scrapy
+# =========================
 .scrapy
 
-# Other
+# =========================
+# Local Development Files
+# =========================
 local_test/
 local_files/
