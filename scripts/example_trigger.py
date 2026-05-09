@@ -18,7 +18,7 @@ async def run_etl_trigger(client: Client, source: str = "au") -> dict:
 
     result = await client.execute_workflow(
         ETLWorkflow.run,
-        source,
+        {"source": source},  # This is the correct dictionary format
         id=workflow_id,
         task_queue="sandbox-task-queue",
     )
@@ -28,7 +28,7 @@ async def run_etl_trigger(client: Client, source: str = "au") -> dict:
 
 
 async def main() -> None:
-    client = await Client.connect("temporal:7233", namespace="default")
+    client = await Client.connect("localhost:7233", namespace="default")
     result = await run_etl_trigger(client, source="au")
     print(f"Workflow result: {result}")
 
