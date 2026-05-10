@@ -20,7 +20,9 @@ from src.temporal.client import get_temporal_client
 
 # Import workflows and activities to register them with the worker
 from src.temporal.workflows.example_workflow import ExampleWorkflow
-from temporal.activities import extract_organisations
+from temporal.activities import extract_organisations, load_organisations
+
+# AA
 
 log = structlog.get_logger(__name__)
 
@@ -35,8 +37,9 @@ async def run_worker() -> None:
         client,
         task_queue="sandbox-task-queue",
         workflows=[ExampleWorkflow],
-        activities=[example_activity, extract_organisations],
+        activities=[example_activity, extract_organisations, load_organisations],
     )
+    # AA
 
     log.info("Worker started", task_queue="sandbox-task-queue")
     await worker.run()

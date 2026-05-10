@@ -8,7 +8,7 @@ from src.temporal.workflows.etl_workflow import ETLWorkflow
 
 async def run(source: str):
     # ✅ 先连接 Temporal
-    client = await Client.connect("localhost:7233")
+    client = await Client.connect("temporal:7233")
 
     result = await client.execute_workflow(
         ETLWorkflow.run,
