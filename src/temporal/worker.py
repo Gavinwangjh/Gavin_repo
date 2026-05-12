@@ -1,13 +1,5 @@
 """
-This module defines the Temporal worker that listens for tasks
-on the specified task queue and executes workflows and activities.
-- The worker is responsible for executing workflows and activities
-when they are scheduled by the Temporal server.
-- It connects to the Temporal server using a shared client configuration.
-- The worker registers the workflows and activities it can execute.
-- To run the worker, execute this script. It will keep running and processing tasks until stopped.
-Example usage:
-    uv run src/temporal/worker.py
+Temporal worker for ETL pipeline.
 """
 
 import asyncio
@@ -15,30 +7,70 @@ import asyncio
 import structlog
 from temporalio.worker import Worker
 
-from src.temporal.activities.example_activity import example_activity
+from src.temporal.activities.discover_websites import (
+    discover_websites,
+)
+from src.temporal.activities.enrich_sustainability import (
+    enrich_sustainability,
+)
+from src.temporal.activities.enrich_websites import (
+    enrich_websites,
+)
+
+# =========================================================
+# Activities
+# =========================================================
+from src.temporal.activities.extract_organisations import (
+    extract_organisations,
+)
+from src.temporal.activities.transform_organisations import (
+    transform_organisations,
+)
 from src.temporal.client import get_temporal_client
 
-# Import workflows and activities to register them with the worker
-from src.temporal.workflows.example_workflow import ExampleWorkflow
-from temporal.activities import extract_organisations
+# =========================================================
+# Workflows
+# =========================================================
+from src.temporal.workflows.etl_workflow import ETLWorkflow
 
 log = structlog.get_logger(__name__)
 
 
 async def run_worker() -> None:
-    # We use a shared client configuration to connect to the Temporal server.
-    # This allows us to reuse the same connection across different parts of the application
-    # (e.g., scripts, workers).
+
+    # =====================================================
+    # Temporal client
+    # =====================================================
+
     client = await get_temporal_client()
+
+    # =====================================================
+    # Worker
+    # =====================================================
 
     worker = Worker(
         client,
+        # 👇 Temporal task queue
         task_queue="sandbox-task-queue",
-        workflows=[ExampleWorkflow],
-        activities=[example_activity, extract_organisations],
+        # 👇 register workflows
+        workflows=[
+            ETLWorkflow,
+        ],
+        # 👇 register activities
+        activities=[
+            extract_organisations,
+            enrich_websites,
+            discover_websites,
+            enrich_sustainability,
+            transform_organisations,
+        ],
     )
 
-    log.info("Worker started", task_queue="sandbox-task-queue")
+    log.info(
+        "ETL Worker started",
+        task_queue="sandbox-task-queue",
+    )
+
     await worker.run()
 
 
