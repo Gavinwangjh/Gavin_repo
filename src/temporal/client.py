@@ -10,4 +10,4 @@ from config.settings import settings
 async def get_temporal_client() -> Client:
     """Create and return a Temporal client."""
 
-    return await Client.connect(settings.temporal_host_local)
+    return await Client.connect("temporal:7233", namespace="default")

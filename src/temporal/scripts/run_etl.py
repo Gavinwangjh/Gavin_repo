@@ -1,48 +1,60 @@
+import argparse
 import asyncio
 import uuid
 
 from temporalio.client import Client
 
-from src.temporal.workflows.etl_workflow import (
-    ETLWorkflow,
-)
+from src.temporal.workflows.etl_workflow import ETLWorkflow
 
 
-async def run(source: str):
-    client = await Client.connect("temporal:7233")
-    
-    # Dynamic workflow parameters
-    
+async def run(source: str, limit: int, name_keyword: str | None = None):
+    client = await Client.connect("temporal:7233", namespace="default")
 
     workflow_params = {
-        # data source
-        "source": "au",
-        #  control extraction size
-        "limit": 5,
-        # optional keyword filtering
-        # "name_keyword": "care",
+        "source": source,
+        "limit": limit,
+        "name_keyword": name_keyword,
     }
-
-    # =====================================================
-    # Execute workflow
-    # =====================================================
 
     result = await client.execute_workflow(
         ETLWorkflow.run,
         workflow_params,
-        id=(f"etl-{workflow_params['source']}-{uuid.uuid4()}"),
+        id=f"etl-{source}-{uuid.uuid4()}",
         task_queue="sandbox-task-queue",
     )
-
-    # =====================================================
-    # Output result
-    # =====================================================
 
     print(result)
 
 
-# =========================================================
-# Run ETL
-# =========================================================
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Run ETL workflow")
 
-asyncio.run(run())
+    parser.add_argument(
+        "--source",
+        choices=["au", "uk"],
+        required=True,
+        help="Data source to run ETL for",
+    )
+
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=5,
+        help="Number of records to extract",
+    )
+
+    parser.add_argument(
+        "--name-keyword",
+        default=None,
+        help="Optional organisation name keyword filter",
+    )
+
+    args = parser.parse_args()
+
+    asyncio.run(
+        run(
+            source=args.source,
+            limit=args.limit,
+            name_keyword=args.name_keyword,
+        )
+    )

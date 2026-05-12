@@ -3,7 +3,6 @@ from datetime import timedelta
 from temporalio import workflow
 
 with workflow.unsafe.imports_passed_through():
-    from src.temporal.workflows.etl_workflow import ETLWorkflow
     from src.temporal.activities.extract_organisations import extract_organisations
     from src.temporal.activities.transform_organisations import transform_organisations
     from src.temporal.activities.enrich_websites import enrich_websites

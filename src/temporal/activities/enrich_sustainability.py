@@ -1,13 +1,11 @@
 # src/temporal/activities/enrich_sustainability.py
 
+from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup
 from temporalio import activity
 
-# =========================================================
-# Common sustainability / ESG paths
-# =========================================================
 
 COMMON_PATHS = [
     "/sustainability",
@@ -32,10 +30,6 @@ COMMON_PATHS = [
 ]
 
 
-# =========================================================
-# Sustainability keywords
-# =========================================================
-
 KEYWORDS = [
     "sustainability",
     "sustainable",
@@ -55,144 +49,141 @@ KEYWORDS = [
 ]
 
 
-# =========================================================
-# PDF report patterns
-# =========================================================
-
 PDF_PATTERNS = [
     "sustainability",
     "esg",
     "annual-report",
+    "annual_report",
     "impact-report",
+    "impact_report",
     "climate",
 ]
 
 
+def clean_text(value):
+    if value is None:
+        return None
+
+    value = str(value).strip()
+    return value if value else None
+
+
+def clean_url(value):
+    value = clean_text(value)
+
+    if value is None:
+        return None
+
+    if not value.startswith(("http://", "https://")):
+        value = f"https://{value}"
+
+    return value
+
+
+def fetch_page(url: str):
+    try:
+        response = requests.get(
+            url,
+            timeout=15,
+            allow_redirects=True,
+            headers={"User-Agent": "Mozilla/5.0"},
+        )
+
+        if response.status_code >= 400:
+            return None, None
+
+        return response.text, response.url
+
+    except requests.RequestException:
+        return None, None
+
+
+def score_page(html: str):
+    html_lower = html.lower()
+
+    soup = BeautifulSoup(html, "html.parser")
+    visible_text = soup.get_text(separator=" ", strip=True).lower()
+
+    keyword_matches = sum(keyword in html_lower for keyword in KEYWORDS)
+    text_matches = sum(keyword in visible_text for keyword in KEYWORDS)
+
+    return keyword_matches + text_matches, soup
+
+
+def find_report_pdf(soup: BeautifulSoup, page_url: str):
+    for a_tag in soup.find_all("a", href=True):
+        href = a_tag["href"]
+        href_lower = href.lower()
+
+        if ".pdf" not in href_lower:
+            continue
+
+        if any(pattern in href_lower for pattern in PDF_PATTERNS):
+            return urljoin(page_url, href)
+
+    return None
+
+
 @activity.defn
 async def enrich_sustainability(enriched_result: dict):
-
     data = enriched_result.get("data", [])
 
     for org in data:
-        website = org.get("website")
-
-        # =====================================================
-        # Skip if no website
-        # =====================================================
+        website = clean_url(org.get("website") or org.get("website_url"))
 
         if not website:
+            org["sustainability_url"] = None
+            org["sustainability_report_url"] = None
+            org["sustainability_confidence"] = 0
+            org["sustainability_pdf_detected"] = False
+            org["sustainability_lookup_status"] = "skipped_no_website"
             continue
 
-        sustainability_found = False
-
-        # =====================================================
-        # Try common ESG / sustainability paths
-        # =====================================================
+        best_match = {
+            "url": None,
+            "report_url": None,
+            "confidence": 0,
+            "pdf_detected": False,
+            "status": "not_found",
+        }
 
         for path in COMMON_PATHS:
-            try:
-                sustainability_url = website.rstrip("/") + path
+            candidate_url = urljoin(website.rstrip("/") + "/", path.lstrip("/"))
 
-                response = requests.get(
-                    sustainability_url,
-                    timeout=10,
-                    allow_redirects=True,
-                    headers={"User-Agent": "Mozilla/5.0"},
-                )
+            html, final_url = fetch_page(candidate_url)
 
-                if response.status_code != 200:
-                    continue
-
-                html = response.text.lower()
-
-                # =================================================
-                # Keyword scoring
-                # =================================================
-
-                keyword_matches = sum(keyword in html for keyword in KEYWORDS)
-
-                # =================================================
-                # Parse HTML
-                # =================================================
-
-                soup = BeautifulSoup(
-                    response.text,
-                    "html.parser",
-                )
-
-                # =================================================
-                # Extract visible text
-                # =================================================
-
-                visible_text = soup.get_text(
-                    separator=" ",
-                    strip=True,
-                ).lower()
-
-                text_matches = sum(keyword in visible_text for keyword in KEYWORDS)
-
-                # =================================================
-                # Search for ESG / report PDFs
-                # =================================================
-
-                pdf_found = False
-
-                for a_tag in soup.find_all("a", href=True):
-                    href = a_tag["href"].lower()
-
-                    if ".pdf" not in href:
-                        continue
-
-                    if any(pattern in href for pattern in PDF_PATTERNS):
-                        pdf_found = True
-                        break
-
-                # =================================================
-                # Confidence scoring
-                # =================================================
-
-                confidence_score = keyword_matches + text_matches + (5 if pdf_found else 0)
-
-                # =================================================
-                # Sustainability page detected
-                # =================================================
-
-                if confidence_score >= 5:
-                    org["sustainability_url"] = sustainability_url
-
-                    org["sustainability_confidence"] = confidence_score
-
-                    org["sustainability_pdf_detected"] = pdf_found
-
-                    sustainability_found = True
-
-                    break
-
-            except Exception:
+            if not html:
                 continue
 
-        # =====================================================
-        # No sustainability page found
-        # =====================================================
+            confidence_score, soup = score_page(html)
+            report_pdf_url = find_report_pdf(soup, final_url)
 
-        if not sustainability_found:
-            org["sustainability_url"] = None
+            if report_pdf_url:
+                confidence_score += 5
 
-            org["sustainability_confidence"] = 0
+            if confidence_score > best_match["confidence"]:
+                best_match = {
+                    "url": final_url,
+                    "report_url": report_pdf_url,
+                    "confidence": confidence_score,
+                    "pdf_detected": report_pdf_url is not None,
+                    "status": "found_candidate",
+                }
 
-            org["sustainability_pdf_detected"] = False
+            if confidence_score >= 5:
+                break
 
-    # =========================================================
-    # Return ETL payload
-    # =========================================================
+        org["sustainability_url"] = best_match["url"]
+        org["sustainability_report_url"] = best_match["report_url"]
+        org["sustainability_confidence"] = best_match["confidence"]
+        org["sustainability_pdf_detected"] = best_match["pdf_detected"]
+        org["sustainability_lookup_status"] = best_match["status"]
 
     return {
         "source": enriched_result.get("source"),
         "requested_limit": enriched_result.get("requested_limit"),
         "returned_count": len(data),
-        # 👇 UI preview
         "sample": data[:5],
-        # 👇 actual ETL payload
         "data": data,
-        "note": ("Professional sustainability discovery enrichment completed"),
+        "note": "Sustainability discovery enrichment completed",
     }
