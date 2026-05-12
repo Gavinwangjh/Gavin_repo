@@ -33,6 +33,13 @@ from src.temporal.client import get_temporal_client
 # =========================================================
 from src.temporal.workflows.etl_workflow import ETLWorkflow
 
+# =========================================================
+# Activities
+# =========================================================
+from src.temporal.activities.extract_organisations import extract_organisations
+from src.temporal.activities.transform_organisations import transform_organisations
+from src.temporal.activities.load_organisations import load_organisations
+
 log = structlog.get_logger(__name__)
 
 
@@ -69,7 +76,13 @@ async def run_worker() -> None:
     log.info(
         "ETL Worker started",
         task_queue="sandbox-task-queue",
+<<<<<<< HEAD
+=======
+        workflows=[ExampleWorkflow],
+        activities=[example_activity, extract_organisations, load_organisations],
+>>>>>>> origin/feature/load-organisations-alaa
     )
+    # AA
 
     await worker.run()
 

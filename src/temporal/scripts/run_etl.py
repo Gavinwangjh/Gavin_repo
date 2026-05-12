@@ -8,24 +8,18 @@ from src.temporal.workflows.etl_workflow import (
 )
 
 
-async def run():
-
-    # =====================================================
-    # Connect to Temporal
-    # =====================================================
-
-    client = await Client.connect("localhost:7233")
-
-    # =====================================================
+async def run(source: str):
+    client = await Client.connect("temporal:7233")
+    
     # Dynamic workflow parameters
-    # =====================================================
+    
 
     workflow_params = {
-        # 👇 data source
+        # data source
         "source": "au",
-        # 👇 control extraction size
+        #  control extraction size
         "limit": 5,
-        # 👇 optional keyword filtering
+        # optional keyword filtering
         # "name_keyword": "care",
     }
 
