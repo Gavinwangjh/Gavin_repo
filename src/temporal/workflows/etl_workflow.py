@@ -52,5 +52,10 @@ class ETLWorkflow:
             sustainability_data,
             start_to_close_timeout=timedelta(seconds=120),
         )
+        loaded_data = await workflow.execute_activity(
+            load_organisations,
+            transformed_data,
+            start_to_close_timeout=timedelta(seconds=120),
+        )
 
-        return transformed_data
+        return loaded_data

@@ -5,114 +5,225 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from temporalio import activity
 
 
+def clean_text(value):
+    if value is None:
+        return None
+
+    value = str(value).strip()
+    return value if value else None
+
+
+def safe_int(value):
+    try:
+        return int(value) if value is not None else None
+    except (TypeError, ValueError):
+        return None
+
+
+def get_records(transformed_data: dict):
+    return (
+        transformed_data.get("transformed_records")
+        or transformed_data.get("transformed_sample")
+        or []
+    )
+
+
+async def lookup_country_id(conn, country_code):
+    country_code = safe_int(country_code)
+
+    if country_code is None:
+        return None
+
+    result = await conn.execute(
+        text(
+            """
+            SELECT "Id"
+            FROM "Countries"
+            WHERE "CountryCode" = :country_code
+            """
+        ),
+        {"country_code": country_code},
+    )
+
+    row = result.fetchone()
+    return row[0] if row else None
+
+
+async def valid_partner_type(conn, partner_type_code):
+    partner_type_code = safe_int(partner_type_code)
+
+    if partner_type_code is None:
+        return None
+
+    result = await conn.execute(
+        text(
+            """
+            SELECT 1
+            FROM "PartnerType"
+            WHERE "PartnerTypeCode" = :partner_type_code
+            """
+        ),
+        {"partner_type_code": partner_type_code},
+    )
+
+    return partner_type_code if result.fetchone() else None
+
+
+async def valid_category(conn, category_code):
+    category_code = safe_int(category_code)
+
+    if category_code is None:
+        return None
+
+    result = await conn.execute(
+        text(
+            """
+            SELECT 1
+            FROM "CategoryTypes"
+            WHERE "CategoryCode" = :category_code
+            """
+        ),
+        {"category_code": category_code},
+    )
+
+    return category_code if result.fetchone() else None
+
+
+async def valid_organisation_size(conn, organisation_size_code):
+    organisation_size_code = safe_int(organisation_size_code)
+
+    if organisation_size_code is None:
+        return None
+
+    result = await conn.execute(
+        text(
+            """
+            SELECT 1
+            FROM "OrganisationSize"
+            WHERE "OrganisationSizeCode" = :organisation_size_code
+            """
+        ),
+        {"organisation_size_code": organisation_size_code},
+    )
+
+    return organisation_size_code if result.fetchone() else None
+
+
 @activity.defn
 async def load_organisations(transformed_data: dict) -> dict:
-    records = transformed_data.get("transformed_sample", [])
+    records = get_records(transformed_data)
 
     if not records:
-        return {"inserted": 0, "status": "no_data"}
+        return {
+            "received": 0,
+            "inserted": 0,
+            "skipped": 0,
+            "status": "no_data",
+        }
 
     database_url = os.getenv("DATABASE_URL")
+
+    if not database_url:
+        return {
+            "received": len(records),
+            "inserted": 0,
+            "skipped": len(records),
+            "status": "missing_database_url",
+        }
+
     engine = create_async_engine(database_url)
 
     inserted = 0
-
-    def safe_int(value):
-        try:
-            return int(value) if value is not None else None
-        except (TypeError, ValueError):
-            return None
+    skipped = 0
 
     async with engine.begin() as conn:
-        for r in records:
-            org_raw = r.get("organisation_registration_number")
-            try:
-                org_id = int(str(org_raw).strip())
-            except (TypeError, ValueError):
+        for record in records:
+            organisation_name = clean_text(record.get("organisation_name"))
+            registration_number = clean_text(
+                record.get("organisation_registration_number")
+            )
+
+            if not organisation_name:
+                skipped += 1
                 continue
 
-            country_code = r.get("country_code")
-            if country_code:
-                country_code = country_code.strip().upper()
+            country_id = await lookup_country_id(
+                conn,
+                record.get("country_code"),
+            )
 
-            partner_type = safe_int(r.get("partner_type_code"))
-            category = safe_int(r.get("category_code"))
-            size = safe_int(r.get("organisation_size_code"))
+            partner_type_code = await valid_partner_type(
+                conn,
+                record.get("partner_type_code"),
+            )
 
-            if partner_type is not None:
-                result = await conn.execute(
-                    text('SELECT 1 FROM "PartnerType" WHERE "PartnerTypeCode" = :code'),
-                    {"code": partner_type},
-                )
+            category_code = await valid_category(
+                conn,
+                record.get("category_code"),
+            )
 
-                if result.fetchone() is None:
-                    partner_type = None
-
-            if category is not None:
-                print("deb:", r.get("country_code"))
-                result = await conn.execute(
-                    text('SELECT 1 FROM "CategoryTypes" WHERE "CategoryCode" = :code'), {"code": category}
-                )
-                # if not result.fetchone():
-                if result.fetchone() is None:
-                    category = None
-
-            if size is not None:
-                result = await conn.execute(
-                    text('SELECT 1 FROM "OrganisationSize" WHERE "OrganisationSizeCode" = :code'),
-                    {"code": size},
-                )
-
-                if result.fetchone() is None:
-                    size = None
+            organisation_size_code = await valid_organisation_size(
+                conn,
+                record.get("organisation_size_code"),
+            )
 
             result = await conn.execute(
-                text("""
-                              INSERT INTO "Organisations"(
-                                   "OrganisationId",
-                                   "OrganisationName",
-                                   "CountryCode",
-                                   "WebsiteUrl",
-                                   "PrimaryEmailAddress",
-                                    "CityName",
-                                    "PartnerTypeCode",
-                                   "CategoryTypeCode",
-                                   "OrganisationSizeCode",
-                                   "PartyIdentifier"
-                                   )
-
-                                   VALUES(
-                                   :org_id,
-                                   :name,
-                                   :country,
-                                   :website,
-                                   :email,
-                                   :city,
-                                   :partner_type,
-                                   :category,
-                                   :size,
-                                   :party_id
-
-                                   )
-                                   ON CONFLICT ("OrganisationId") DO NOTHING
-                                   RETURNING "OrganisationId"
-                                   """),
+                text(
+                    """
+                    INSERT INTO "Organisations" (
+                        "CountryId",
+                        "CategoryTypeCode",
+                        "PartnerTypeCode",
+                        "OrganisationSizeCode",
+                        "OrganisationName",
+                        "OrganisationRegistrationNumber",
+                        "CityName",
+                        "StateName",
+                        "WebsiteUrl",
+                        "SustainabilityUrl",
+                        "PrimaryEmailAddress"
+                    )
+                    VALUES (
+                        :country_id,
+                        :category_code,
+                        :partner_type_code,
+                        :organisation_size_code,
+                        :organisation_name,
+                        :registration_number,
+                        :city_name,
+                        :state_name,
+                        :website_url,
+                        :sustainability_url,
+                        :primary_email_address
+                    )
+                    RETURNING "OrganisationId"
+                    """
+                ),
                 {
-                    "org_id": org_id,
-                    "name": r.get("organisation_name"),
-                    "country": country_code,
-                    "website": r.get("website_url"),
-                    "email": r.get("primary_email_address"),
-                    "city": r.get("city_name"),
-                    "partner_type": partner_type,
-                    "category": category,
-                    "size": size,
-                    "party_id": None,
+                    "country_id": country_id,
+                    "category_code": category_code,
+                    "partner_type_code": partner_type_code,
+                    "organisation_size_code": organisation_size_code,
+                    "organisation_name": organisation_name,
+                    "registration_number": registration_number,
+                    "city_name": clean_text(record.get("city_name")),
+                    "state_name": clean_text(record.get("state_name")),
+                    "website_url": clean_text(record.get("website_url")),
+                    "sustainability_url": clean_text(record.get("sustainability_url")),
+                    "primary_email_address": clean_text(
+                        record.get("primary_email_address")
+                    ),
                 },
             )
 
-        row = result.fetchone()
-        if row is not None:
-            inserted += 1
+            if result.fetchone():
+                inserted += 1
 
-    return {"inserted": inserted, "status": "successful!"}
+    await engine.dispose()
+
+    return {
+        "received": len(records),
+        "inserted": inserted,
+        "skipped": skipped,
+        "status": "successful",
+    }
