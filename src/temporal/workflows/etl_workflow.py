@@ -29,21 +29,21 @@ class ETLWorkflow:
             start_to_close_timeout=timedelta(seconds=120),
         )
 
-        ngo_enriched_data = await workflow.execute_activity(
-            enrich_websites,
+        website_data = await workflow.execute_activity(
+            discover_websites,
             extracted_data,
             start_to_close_timeout=timedelta(seconds=120),
         )
 
-        website_data = await workflow.execute_activity(
-            discover_websites,
-            ngo_enriched_data,
+        website_enriched_data = await workflow.execute_activity(
+            enrich_websites,
+            website_data,
             start_to_close_timeout=timedelta(seconds=120),
         )
 
         sustainability_data = await workflow.execute_activity(
             enrich_sustainability,
-            website_data,
+            website_enriched_data,
             start_to_close_timeout=timedelta(seconds=120),
         )
 

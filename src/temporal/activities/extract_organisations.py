@@ -75,6 +75,10 @@ async def extract_organisations(params: dict):
                     "organisation_id": organisation_id,
                     "country": "au",
                     "country_code": "AU",
+                    "source_industry_code_type": "ANZSIC",
+                    "source_industry_code": None,
+                    "source_industry_description": None,
+                    "employee_count": None,
                     # =========================================
                     # enrichment placeholder fields
                     # =========================================
@@ -119,6 +123,8 @@ async def extract_organisations(params: dict):
             )
 
             for row in reader:
+                if len(data) == 0:
+                    print("UK CSV columns:", row.keys())
                 if len(data) >= limit:
                     break
 
@@ -132,7 +138,12 @@ async def extract_organisations(params: dict):
                 # Organisation ID
                 # =============================================
 
-                organisation_id = row.get("CompanyNumber")
+                organisation_id = (
+                    row.get("CompanyNumber")
+                    or row.get(" CompanyNumber")
+                    or row.get("Company Number")
+                    or row.get("company_number")
+                )
 
                 # =============================================
                 # Optional filtering
@@ -144,13 +155,24 @@ async def extract_organisations(params: dict):
                 # =============================================
                 # ETL extraction payload
                 # =============================================
+                sic_text = row.get("SICCode.SicText_1")
+                sic_code = None
+                sic_description = None
 
+                if sic_text and " - " in sic_text:
+                    sic_code, sic_description = sic_text.split(" - ", 1)
+                elif sic_text:
+                    sic_code = sic_text
                 data.append(
                     {
                         "organisation_name": name,
                         "organisation_id": organisation_id,
                         "country": "uk",
                         "country_code": "UK",
+                        "source_industry_code_type": "SIC",
+                        "source_industry_code": sic_code,
+                        "source_industry_description": sic_description,
+                        "employee_count": None,
                         # =====================================
                         # enrichment placeholder fields
                         # =====================================

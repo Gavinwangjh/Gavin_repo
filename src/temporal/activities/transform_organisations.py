@@ -141,7 +141,7 @@ def map_organisation_size(employee_count):
 
 @activity.defn
 async def transform_organisations(extracted_data: dict) -> dict:
-    records = extracted_data.get("sample", [])
+    records = extracted_data.get("data") or extracted_data.get("sample", [])
 
     source = clean_text(extracted_data.get("source"))
 
