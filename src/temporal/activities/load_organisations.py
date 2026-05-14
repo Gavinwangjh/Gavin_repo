@@ -181,7 +181,12 @@ async def load_organisations(transformed_data: dict) -> dict:
                         "StateName",
                         "WebsiteUrl",
                         "SustainabilityUrl",
-                        "PrimaryEmailAddress"
+                        "PrimaryEmailAddress",
+                        "SourceIndustryCodeType",
+                        "SourceIndustryCode",
+                        "SourceIndustryDescription",
+                        "SourceName",
+                        "SourceUrl"
                     )
                     VALUES (
                         :country_id,
@@ -194,7 +199,12 @@ async def load_organisations(transformed_data: dict) -> dict:
                         :state_name,
                         :website_url,
                         :sustainability_url,
-                        :primary_email_address
+                        :primary_email_address,
+                        :source_industry_code_type,
+                        :source_industry_code,
+                        :source_industry_description,
+                        :source_name,
+                        :source_url
                     )
                     RETURNING "OrganisationId"
                     """
@@ -210,9 +220,12 @@ async def load_organisations(transformed_data: dict) -> dict:
                     "state_name": clean_text(record.get("state_name")),
                     "website_url": clean_text(record.get("website_url")),
                     "sustainability_url": clean_text(record.get("sustainability_url")),
-                    "primary_email_address": clean_text(
-                        record.get("primary_email_address")
-                    ),
+                    "primary_email_address": clean_text(record.get("primary_email_address")),
+                    "source_industry_code_type": clean_text(record.get("source_industry_code_type")),
+                    "source_industry_code": clean_text(record.get("source_industry_code")),
+                    "source_industry_description": clean_text(record.get("source_industry_description")),
+                    "source_name": clean_text(record.get("source")),
+                    "source_url": clean_text(record.get("source_url")),
                 },
             )
 

@@ -78,6 +78,8 @@ def map_country_code(source: str | None, raw_country_code: str | None):
 
     if source == "uk" or raw_country_code == "UK":
         return "44"
+    if source == "us_sec" or raw_country_code == "US":
+        return "1"
 
     return raw_country_code
 
@@ -92,6 +94,8 @@ def map_country_name(source: str | None, raw_country: str | None, raw_country_co
 
     if source == "uk" or raw_country_code == "UK":
         return "United Kingdom"
+    if source == "us_sec" or raw_country_code == "US":
+        return "United States"
 
     return raw_country
 
@@ -114,6 +118,8 @@ def get_source_industry_code_type(source: str | None, record: dict):
 
     if source == "au":
         return "ANZSIC"
+    if source == "us_sec":
+        return "SIC"
 
     return None
 
