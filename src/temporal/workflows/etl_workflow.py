@@ -26,36 +26,36 @@ class ETLWorkflow:
                 "limit": limit,
                 "name_keyword": name_keyword,
             },
-            start_to_close_timeout=timedelta(seconds=120),
+            start_to_close_timeout=timedelta(minutes=10),
         )
 
         website_data = await workflow.execute_activity(
             discover_websites,
             extracted_data,
-            start_to_close_timeout=timedelta(seconds=120),
+            start_to_close_timeout=timedelta(minutes=10),
         )
 
         website_enriched_data = await workflow.execute_activity(
             enrich_websites,
             website_data,
-            start_to_close_timeout=timedelta(seconds=120),
+            start_to_close_timeout=timedelta(minutes=10),
         )
 
         sustainability_data = await workflow.execute_activity(
             enrich_sustainability,
             website_enriched_data,
-            start_to_close_timeout=timedelta(seconds=120),
+            start_to_close_timeout=timedelta(minutes=10),
         )
 
         transformed_data = await workflow.execute_activity(
             transform_organisations,
             sustainability_data,
-            start_to_close_timeout=timedelta(seconds=120),
+            start_to_close_timeout=timedelta(minutes=10),
         )
         loaded_data = await workflow.execute_activity(
             load_organisations,
             transformed_data,
-            start_to_close_timeout=timedelta(seconds=120),
+            start_to_close_timeout=timedelta(minutes=10),
         )
 
         return loaded_data

@@ -180,6 +180,21 @@ async def transform_organisations(extracted_data: dict) -> dict:
                 "Primary Organisation",
             ],
         )
+        primary_organisation_name = first_available(
+            record,
+            [
+                "primary_organisation_name",
+                "Primary Organisation",
+            ],
+        )
+
+        company_name = first_available(
+            record,
+            [
+                "company_name",
+                "Company Name",
+            ],
+        )
 
         organisation_registration_number = first_available(
             record,
@@ -318,6 +333,8 @@ async def transform_organisations(extracted_data: dict) -> dict:
                 "category_description": category_description,
                 "organisation_name": organisation_name,
                 "organisation_registration_number": organisation_registration_number,
+                "primary_organisation_name": primary_organisation_name,
+                "company_name": company_name,
                 "website_url": website_url,
                 "sustainability_url": sustainability_url,
                 "sustainability_report_url": clean_url(record.get("sustainability_report_url")),

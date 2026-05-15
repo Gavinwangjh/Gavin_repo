@@ -169,24 +169,27 @@ async def load_organisations(transformed_data: dict) -> dict:
 
             result = await conn.execute(
                 text(
+
                     """
                     INSERT INTO "Organisations" (
-                        "CountryId",
-                        "CategoryTypeCode",
-                        "PartnerTypeCode",
-                        "OrganisationSizeCode",
-                        "OrganisationName",
-                        "OrganisationRegistrationNumber",
-                        "CityName",
-                        "StateName",
-                        "WebsiteUrl",
-                        "SustainabilityUrl",
-                        "PrimaryEmailAddress",
-                        "SourceIndustryCodeType",
-                        "SourceIndustryCode",
-                        "SourceIndustryDescription",
-                        "SourceName",
-                        "SourceUrl"
+                    "CountryId",
+                    "CategoryTypeCode",
+                    "PartnerTypeCode",
+                    "OrganisationSizeCode",
+                    "OrganisationName",
+                    "PrimaryOrganisationName",
+                    "CompanyName",
+                    "OrganisationRegistrationNumber",
+                    "CityName",
+                    "StateName",
+                    "WebsiteUrl",
+                    "SustainabilityUrl",
+                    "PrimaryEmailAddress",
+                    "SourceIndustryCodeType",
+                    "SourceIndustryCode",
+                    "SourceIndustryDescription",
+                    "SourceName",
+                    "SourceUrl"
                     )
                     VALUES (
                         :country_id,
@@ -194,6 +197,8 @@ async def load_organisations(transformed_data: dict) -> dict:
                         :partner_type_code,
                         :organisation_size_code,
                         :organisation_name,
+                        :primary_organisation_name,
+                        :company_name,
                         :registration_number,
                         :city_name,
                         :state_name,
@@ -215,6 +220,8 @@ async def load_organisations(transformed_data: dict) -> dict:
                     "partner_type_code": partner_type_code,
                     "organisation_size_code": organisation_size_code,
                     "organisation_name": organisation_name,
+                    "primary_organisation_name": clean_text(record.get("primary_organisation_name")),
+                    "company_name": clean_text(record.get("company_name")),
                     "registration_number": registration_number,
                     "city_name": clean_text(record.get("city_name")),
                     "state_name": clean_text(record.get("state_name")),

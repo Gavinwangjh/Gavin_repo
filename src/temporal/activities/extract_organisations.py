@@ -74,8 +74,10 @@ async def extract_organisations(params: dict):
             # Organisation name mapping
             # =================================================
 
-            name = (row.get("Primary Organisation") or row.get("Company Name") or "").strip()
+            primary_organisation = (row.get("Primary Organisation") or "").strip()
+            company_name = (row.get("Company Name") or "").strip()
 
+            name = primary_organisation or company_name
             # =================================================
             # Organisation ID mapping
             # =================================================
@@ -96,10 +98,13 @@ async def extract_organisations(params: dict):
             data.append(
                 {
                     "organisation_name": name,
+                    "primary_organisation_name": primary_organisation,
                     "organisation_id": organisation_id,
+                    "company_name": company_name,
                     "country": "au",
                     "country_code": "AU",
                     "source_industry_code_type": "ANZSIC",
+                    "organisation_name": name,
                     "source_industry_code": None,
                     "source_industry_description": None,
                     "employee_count": None,
@@ -370,10 +375,12 @@ async def extract_organisations(params: dict):
             data.append(
                 {
                     "organisation_name": name,
+                    "primary_organisation_name": name,
+                    "company name": None,
                     "organisation_id": organisation_id,
                     "country": "au",
                     "country_code": "AU",
-
+                    "organisation_name": name,
                     "source_industry_code_type": "ANZSIC",
                     "source_industry_code": anzsic_code,
                     "source_industry_description": anzsic_description,
