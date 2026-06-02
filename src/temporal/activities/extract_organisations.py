@@ -384,6 +384,10 @@ async def extract_organisations(params: dict):
                     "source_industry_code_type": "ANZSIC",
                     "source_industry_code": anzsic_code,
                     "source_industry_description": anzsic_description,
+                    "source_industry_division": row.get("primary_division_name"),
+                    "source_industry_subdivision": row.get("primary_subdivision_name"),
+                    "source_industry_group": row.get("primary_group_name"),
+                    "source_industry_class": row.get("primary_class_name"),
 
                     "website": None,
                     "sustainability_url": None,

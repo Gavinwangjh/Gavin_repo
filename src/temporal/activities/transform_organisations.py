@@ -140,6 +140,58 @@ def map_organisation_size(employee_count):
 
     return "3", "Large"
 
+def resolve_partner_type(record: dict):
+    partner_type = clean_text(record.get("partner_type"))
+    partner_type_code = clean_text(record.get("partner_type_code"))
+
+    if partner_type and partner_type_code:
+        return partner_type, partner_type_code, "source_provided"
+
+    source = clean_text(record.get("source"))
+
+    if source == "dfat_ngo":
+        return "NGO", "1", "source_inferred_ngo"
+
+    return "Brand", "2", "default_brand"
+
+
+BRAND_CATEGORY_BY_ANZSIC_DIVISION = {
+    "Agriculture, Forestry and Fishing": ("1", "Agriculture, Forestry and Fishing"),
+    "Mining": ("2", "Mining"),
+    "Manufacturing": ("3", "Manufacturing"),
+    "Electricity, Gas, Water and Waste Services": ("4", "Electricity, Gas, Water and Waste Services"),
+    "Construction": ("5", "Construction"),
+    "Wholesale Trade": ("6", "Wholesale Trade"),
+    "Retail Trade": ("7", "Retail Trade"),
+    "Accommodation and Food Services": ("8", "Accommodation and Food Services"),
+    "Transport, Postal and Warehousing": ("9", "Transport, Postal and Warehousing"),
+    "Information Media and Telecommunications": ("10", "Information Media and Telecommunications"),
+    "Financial and Insurance Services": ("11", "Financial and Insurance Services"),
+    "Rental, Hiring and Real Estate Services": ("12", "Rental, Hiring and Real Estate Services"),
+    "Professional, Scientific and Technical Services": ("13", "Professional, Scientific and Technical Services Administrative and Support Services"),
+    "Administrative and Support Services": ("14", "Public Administration and Safety"),
+    "Public Administration and Safety": ("15", "Education and Training"),
+    "Education and Training": ("16", "Health Care and Social Assistance"),
+    "Health Care and Social Assistance": ("17", "Arts and recreation Services"),
+    "Arts and Recreation Services": ("18", "Other Services"),
+}
+
+
+def resolve_category(record: dict):
+    category_code = clean_text(record.get("category_code"))
+    category_description = clean_text(record.get("category_description")) or clean_text(record.get("category"))
+
+    if category_code:
+        return category_code, category_description, "source_provided"
+
+    division = clean_text(record.get("source_industry_division"))
+
+    if division in BRAND_CATEGORY_BY_ANZSIC_DIVISION:
+        mapped_code, mapped_description = BRAND_CATEGORY_BY_ANZSIC_DIVISION[division]
+        return mapped_code, mapped_description, "mapped_from_anzsic_division"
+
+    return None, category_description, "missing_category_mapping"
+
 
 # =========================================================
 # Transform activity
@@ -282,22 +334,7 @@ async def transform_organisations(extracted_data: dict) -> dict:
 
         source_industry_code_type = get_source_industry_code_type(source, record)
 
-        category_code = clean_text(record.get("category_code"))
-        category_description = first_available(
-            record,
-            [
-                "category_description",
-                "category",
-            ],
-        )
-
-        category_mapping_status = (
-            "mapped"
-            if category_code is not None
-            else "pending_mapping"
-            if source_industry_code is not None
-            else "missing_source_industry_code"
-        )
+        category_code, category_description, category_mapping_status = resolve_category(record)
 
         employee_count = first_available(
             record,
@@ -310,12 +347,13 @@ async def transform_organisations(extracted_data: dict) -> dict:
         )
 
         organisation_size_code, organisation_size = map_organisation_size(employee_count)
+        partner_type, partner_type_code, partner_type_assignment_method = resolve_partner_type(record)
 
         transformed_records.append(
             {
                 # Categorisation by code
                 "country_code": country_code,
-                "partner_type_code": clean_text(record.get("partner_type_code")) or "2",
+                "partner_type_code": partner_type_code,
                 "category_code": category_code,
                 "organisation_size_code": clean_text(record.get("organisation_size_code")) or organisation_size_code,
                 "organisation_size": clean_text(record.get("organisation_size")) or organisation_size,
@@ -329,7 +367,8 @@ async def transform_organisations(extracted_data: dict) -> dict:
                 "category_mapping_status": category_mapping_status,
 
                 # Data ingestion fields
-                "partner_type": clean_text(record.get("partner_type")) or "Brand",
+                "partner_type": partner_type,
+                "partner_type_assignment_method": partner_type_assignment_method,
                 "category_description": category_description,
                 "organisation_name": organisation_name,
                 "organisation_registration_number": organisation_registration_number,
