@@ -146,7 +146,22 @@ async def load_organisations(transformed_data: dict) -> dict:
             if not organisation_name:
                 skipped += 1
                 continue
+            #duplicate check
+            if registration_number:
+                existing_result = await conn.execute(
+                    text(
+                        """
+                        SELECT "OrganisationId"
+                        FROM "Organisations"
+                        WHERE "OrganisationRegistrationNumber" = :registration_number
+                        """
+                    ),
+                    {"registration_number": registration_number},
+                )
 
+                if existing_result.fetchone():
+                    skipped += 1
+                    continue
             country_id = await lookup_country_id(
                 conn,
                 record.get("country_code"),
