@@ -15,6 +15,9 @@ SEC_HEADERS = {
     "User-Agent": "unisa-datacollection-2026-07 academic prototype"
 }
 
+AU_ABN_RESOURCE_ID = "2b0cb5e3-05d4-4e95-b9e8-7a1493a01a81"
+AU_WGEA_RESOURCE_ID = "4f716314-5de2-425b-aef2-6501c0be076f"
+
 def get_data_gov_resource_download_url(resource_id: str) -> str:
     api_url = "https://data.gov.au/data/api/3/action/resource_show"
 
@@ -29,6 +32,60 @@ def get_data_gov_resource_download_url(resource_id: str) -> str:
     payload = response.json()
 
     return payload["result"]["url"]
+
+def load_wgea_lookup() -> dict:
+    url = get_data_gov_resource_download_url(AU_WGEA_RESOURCE_ID)
+
+    response = requests.get(url, timeout=60)
+    response.raise_for_status()
+
+    zip_file = zipfile.ZipFile(io.BytesIO(response.content))
+
+    csv_filename = next(
+        name for name in zip_file.namelist()
+        if name.lower().endswith(".csv")
+    )
+
+    with zip_file.open(csv_filename) as csv_file:
+        df = pd.read_csv(
+            csv_file,
+            dtype=str,
+            engine="python",
+            encoding="latin1",
+            on_bad_lines="skip",
+        )
+
+    lookup = {}
+
+    for _, row in df.iterrows():
+        abn = row.get("primary_abn")
+
+        if not abn:
+            continue
+
+        abn = str(abn).strip()
+
+        if abn in lookup:
+            continue
+
+        lookup[abn] = {
+            "source_industry_code_type": "ANZSIC",
+            "source_industry_code": row.get("primary_anzsic"),
+            "source_industry_description": (
+                row.get("primary_class_name")
+                or row.get("primary_group_name")
+                or row.get("primary_subdivision_name")
+                or row.get("primary_division_name")
+            ),
+            "source_industry_division": row.get("primary_division_name"),
+            "source_industry_subdivision": row.get("primary_subdivision_name"),
+            "source_industry_group": row.get("primary_group_name"),
+            "source_industry_class": row.get("primary_class_name"),
+            "organisation_size": row.get("submission_group_size"),
+            "wgea_lookup_status": "matched_wgea_by_abn",
+        }
+
+    return lookup
 
 
 @activity.defn
@@ -51,12 +108,7 @@ async def extract_organisations(params: dict):
     # =====================================================
 
     if source == "au":
-        url = (
-            "https://data.gov.au/data/dataset/"
-            "4d35cd80-2538-4705-82f3-d0d18e823d98/"
-            "resource/2b0cb5e3-05d4-4e95-b9e8-7a1493a01a81/"
-            "download/2022_included_organisations_per_abn.csv"
-        )
+        url = get_data_gov_resource_download_url(AU_ABN_RESOURCE_ID)
 
         response = requests.get(url, timeout=60)
 
@@ -65,6 +117,11 @@ async def extract_organisations(params: dict):
         csv_file = StringIO(response.text)
 
         reader = csv.DictReader(csv_file)
+
+        try:
+            wgea_lookup = load_wgea_lookup()
+        except Exception:
+            wgea_lookup = {}
 
         for row in reader:
             if len(data) >= limit:
@@ -83,6 +140,8 @@ async def extract_organisations(params: dict):
             # =================================================
 
             organisation_id = row.get("ABN") or row.get("Primary ABN") or row.get("ï»¿Primary ABN")
+            organisation_id = str(organisation_id).strip() if organisation_id else None
+            wgea_match = wgea_lookup.get(organisation_id) if organisation_id else None
 
             # =================================================
             # Optional filtering
@@ -103,10 +162,16 @@ async def extract_organisations(params: dict):
                     "company_name": company_name,
                     "country": "au",
                     "country_code": "AU",
-                    "source_industry_code_type": "ANZSIC",
+                    "source_industry_code_type": (wgea_match.get("source_industry_code_type") if wgea_match else "ANZSIC"),
                     "organisation_name": name,
-                    "source_industry_code": None,
-                    "source_industry_description": None,
+                    "source_industry_code": (wgea_match.get("source_industry_code") if wgea_match else None),
+                    "source_industry_description": (wgea_match.get("source_industry_description") if wgea_match else None),
+                    "source_industry_division": (wgea_match.get("source_industry_division") if wgea_match else None),
+                    "source_industry_subdivision": (wgea_match.get("source_industry_subdivision") if wgea_match else None),
+                    "source_industry_group": (wgea_match.get("source_industry_group") if wgea_match else None),
+                    "source_industry_class": (wgea_match.get("source_industry_class") if wgea_match else None),
+                    "organisation_size": (wgea_match.get("organisation_size") if wgea_match else None),
+                    "wgea_lookup_status": (wgea_match.get("wgea_lookup_status") if wgea_match else "not_matched_wgea"),
                     "employee_count": None,
                     # =========================================
                     # enrichment placeholder fields
