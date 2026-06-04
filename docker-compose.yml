@@ -145,6 +145,39 @@ services:
       # Run as current user to avoid permission issues with mounted volumes (e.g., logs, data).
       # On Mac/Windows, this is less relevant due to how Docker handles file permissions, but it's crucial for Linux hosts.
       user: "${UID:-1000}:${GID:-1000}"
+    frontend:
+      build:
+        context: .
+        dockerfile: Dockerfile
+      container_name: ${PROJECT_NAME}_frontend
+      restart: unless-stopped
+      command: >-
+        uv run streamlit run src/frontend/app.py
+        --server.address=0.0.0.0
+        --server.port=8501
+      depends_on:
+        db:
+          condition: service_healthy
+        temporal:
+          condition: service_started
+      environment:
+        - UV_NO_SYNC=1
+        - UV_LINK_MODE=copy
+        - DATABASE_URL=postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+        - TEMPORAL_HOST=temporal
+        - TEMPORAL_PORT=7233
+        - TEMPORAL_UI_URL=http://localhost:8080
+        - PYTHONDONTWRITEBYTECODE=1
+        - PYTHONUNBUFFERED=1
+      volumes:
+        - .:/app
+        - /app/.venv
+      working_dir: /app
+      ports:
+        - "8501:8501"
+      networks:
+        - sandbox_net
+      user: "${UID:-1000}:${GID:-1000}"
 
 # ─────────────────────────────────────────────────────────────
 # VOLUMES
