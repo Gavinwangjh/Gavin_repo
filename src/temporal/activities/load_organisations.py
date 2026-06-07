@@ -135,7 +135,7 @@ async def load_organisations(transformed_data: dict) -> dict:
 
     inserted = 0
     skipped = 0
-
+    skipped_records = []
     async with engine.begin() as conn:
         for record in records:
             organisation_name = clean_text(record.get("organisation_name"))
@@ -145,6 +145,14 @@ async def load_organisations(transformed_data: dict) -> dict:
 
             if not organisation_name:
                 skipped += 1
+                skipped_records.append(
+                    {
+                        "reason": "missing_organisation_name",
+                        "registration_number": registration_number,
+                        "source": record.get("source"),
+                        "record": record,
+                    }
+                )
                 continue
             #duplicate check
             if registration_number:
@@ -161,6 +169,14 @@ async def load_organisations(transformed_data: dict) -> dict:
 
                 if existing_result.fetchone():
                     skipped += 1
+                    skipped_records.append(
+                    {
+                        "reason": "duplicate_registration_number",
+                        "organisation_name": organisation_name,
+                        "registration_number": registration_number,
+                        "source": record.get("source"),
+                    }
+                )
                     continue
             country_id = await lookup_country_id(
                 conn,
@@ -263,5 +279,6 @@ async def load_organisations(transformed_data: dict) -> dict:
         "received": len(records),
         "inserted": inserted,
         "skipped": skipped,
+        "skipped_records": skipped_records,
         "status": "successful",
     }
