@@ -267,7 +267,7 @@ wheels = [
 ]
 
 [[package]]
-name = "datacollection-starter-kit-template"
+name = "etl-data-pipeline-system"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

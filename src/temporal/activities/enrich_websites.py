@@ -7,7 +7,6 @@ import requests
 from bs4 import BeautifulSoup
 from temporalio import activity
 
-
 DFAT_URL = (
     "https://www.dfat.gov.au/development/"
     "who-we-work-with/ngos/"
@@ -15,9 +14,7 @@ DFAT_URL = (
     "non-government-organisations"
 )
 
-REQUEST_HEADERS = {
-    "User-Agent": "Mozilla/5.0"
-}
+REQUEST_HEADERS = {"User-Agent": "Mozilla/5.0"}
 
 CONTACT_PATHS = [
     "",
@@ -152,8 +149,7 @@ def build_dfat_ngo_map():
 
     for category, heading_text in sections.items():
         heading = soup.find(
-            lambda tag: tag.name in ["h2", "h3"]
-            and heading_text in tag.get_text()
+            lambda tag, heading_text=heading_text: tag.name in ["h2", "h3"] and heading_text in tag.get_text()
         )
 
         if not heading:

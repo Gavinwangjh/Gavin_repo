@@ -2,10 +2,10 @@ import re
 
 from temporalio import activity
 
-
 # =========================================================
 # Cleaning helpers
 # =========================================================
+
 
 def clean_text(value):
     if value is None:
@@ -69,6 +69,7 @@ def first_available_email(record: dict, keys: list[str]):
 # helpers
 # =========================================================
 
+
 def map_country_code(source: str | None, raw_country_code: str | None):
     source = clean_text(source)
     raw_country_code = clean_text(raw_country_code)
@@ -123,6 +124,7 @@ def get_source_industry_code_type(source: str | None, record: dict):
 
     return None
 
+
 def map_organisation_size(employee_count):
     if employee_count is None:
         return None, None
@@ -139,6 +141,7 @@ def map_organisation_size(employee_count):
         return "2", "Medium"
 
     return "3", "Large"
+
 
 def resolve_partner_type(record: dict):
     partner_type = clean_text(record.get("partner_type"))
@@ -168,7 +171,10 @@ BRAND_CATEGORY_BY_ANZSIC_DIVISION = {
     "Information Media and Telecommunications": ("10", "Information Media and Telecommunications"),
     "Financial and Insurance Services": ("11", "Financial and Insurance Services"),
     "Rental, Hiring and Real Estate Services": ("12", "Rental, Hiring and Real Estate Services"),
-    "Professional, Scientific and Technical Services": ("13", "Professional, Scientific and Technical Services Administrative and Support Services"),
+    "Professional, Scientific and Technical Services": (
+        "13",
+        "Professional, Scientific and Technical Services Administrative and Support Services",
+    ),
     "Administrative and Support Services": ("14", "Public Administration and Safety"),
     "Public Administration and Safety": ("15", "Education and Training"),
     "Education and Training": ("16", "Health Care and Social Assistance"),
@@ -179,7 +185,9 @@ BRAND_CATEGORY_BY_ANZSIC_DIVISION = {
 
 def resolve_category(record: dict):
     category_code = clean_text(record.get("category_code"))
-    category_description = clean_text(record.get("category_description")) or clean_text(record.get("category"))
+    category_description = clean_text(record.get("category_description")) or clean_text(
+        record.get("category")
+    )
 
     if category_code:
         return category_code, category_description, "source_provided"
@@ -196,6 +204,7 @@ def resolve_category(record: dict):
 # =========================================================
 # Transform activity
 # =========================================================
+
 
 @activity.defn
 async def transform_organisations(extracted_data: dict) -> dict:
@@ -355,17 +364,15 @@ async def transform_organisations(extracted_data: dict) -> dict:
                 "country_code": country_code,
                 "partner_type_code": partner_type_code,
                 "category_code": category_code,
-                "organisation_size_code": clean_text(record.get("organisation_size_code")) or organisation_size_code,
+                "organisation_size_code": clean_text(record.get("organisation_size_code"))
+                or organisation_size_code,
                 "organisation_size": clean_text(record.get("organisation_size")) or organisation_size,
                 "employee_count": employee_count,
-                
-
                 # Industry classification traceability
                 "source_industry_code_type": source_industry_code_type,
                 "source_industry_code": source_industry_code,
                 "source_industry_description": source_industry_description,
                 "category_mapping_status": category_mapping_status,
-
                 # Data ingestion fields
                 "partner_type": partner_type,
                 "partner_type_assignment_method": partner_type_assignment_method,
@@ -383,13 +390,9 @@ async def transform_organisations(extracted_data: dict) -> dict:
                 "state_name": state_name,
                 "country_name": country_name,
                 "primary_email_address": primary_email_address,
-
                 # Enrichment status
                 "website_lookup_status": clean_text(record.get("website_lookup_status")),
-                "sustainability_lookup_status": clean_text(
-                    record.get("sustainability_lookup_status")
-                ),
-
+                "sustainability_lookup_status": clean_text(record.get("sustainability_lookup_status")),
                 # Traceability fields
                 "source": clean_text(record.get("source")),
                 "source_url": clean_url(record.get("source_url")),
@@ -402,8 +405,5 @@ async def transform_organisations(extracted_data: dict) -> dict:
         "extracted_count": extracted_data.get("returned_count"),
         "transformed_count": len(transformed_records),
         "transformed_sample": transformed_records,
-        "note": (
-            "Extracted and enriched organisation records transformed into "
-            "required ingestion format."
-        ),
+        "note": ("Extracted and enriched organisation records transformed into required ingestion format."),
     }

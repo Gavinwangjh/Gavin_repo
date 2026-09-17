@@ -3,20 +3,20 @@ import io
 import zipfile
 from io import StringIO
 
+import pandas as pd
 import requests
 from temporalio import activity
-import pandas as pd
-
 
 SEC_TICKERS_URL = "https://www.sec.gov/files/company_tickers.json"
 SEC_SUBMISSIONS_URL = "https://data.sec.gov/submissions/CIK{cik}.json"
 
 SEC_HEADERS = {
-    "User-Agent": "unisa-datacollection-2026-07 academic prototype"
+    "User-Agent": "ETL Data Pipeline System contact: gavinwangjh@gmail.com",
 }
 
 AU_ABN_RESOURCE_ID = "2b0cb5e3-05d4-4e95-b9e8-7a1493a01a81"
 AU_WGEA_RESOURCE_ID = "4f716314-5de2-425b-aef2-6501c0be076f"
+
 
 def get_data_gov_resource_download_url(resource_id: str) -> str:
     api_url = "https://data.gov.au/data/api/3/action/resource_show"
@@ -33,6 +33,7 @@ def get_data_gov_resource_download_url(resource_id: str) -> str:
 
     return payload["result"]["url"]
 
+
 def load_wgea_lookup() -> dict:
     url = get_data_gov_resource_download_url(AU_WGEA_RESOURCE_ID)
 
@@ -41,10 +42,7 @@ def load_wgea_lookup() -> dict:
 
     zip_file = zipfile.ZipFile(io.BytesIO(response.content))
 
-    csv_filename = next(
-        name for name in zip_file.namelist()
-        if name.lower().endswith(".csv")
-    )
+    csv_filename = next(name for name in zip_file.namelist() if name.lower().endswith(".csv"))
 
     with zip_file.open(csv_filename) as csv_file:
         df = pd.read_csv(
@@ -142,6 +140,7 @@ async def extract_organisations(params: dict):
             organisation_id = row.get("ABN") or row.get("Primary ABN") or row.get("ï»¿Primary ABN")
             organisation_id = str(organisation_id).strip() if organisation_id else None
             wgea_match = wgea_lookup.get(organisation_id) if organisation_id else None
+            wgea_data = wgea_match or {}
 
             # =================================================
             # Optional filtering
@@ -162,16 +161,15 @@ async def extract_organisations(params: dict):
                     "company_name": company_name,
                     "country": "au",
                     "country_code": "AU",
-                    "source_industry_code_type": (wgea_match.get("source_industry_code_type") if wgea_match else "ANZSIC"),
-                    "organisation_name": name,
-                    "source_industry_code": (wgea_match.get("source_industry_code") if wgea_match else None),
-                    "source_industry_description": (wgea_match.get("source_industry_description") if wgea_match else None),
-                    "source_industry_division": (wgea_match.get("source_industry_division") if wgea_match else None),
-                    "source_industry_subdivision": (wgea_match.get("source_industry_subdivision") if wgea_match else None),
-                    "source_industry_group": (wgea_match.get("source_industry_group") if wgea_match else None),
-                    "source_industry_class": (wgea_match.get("source_industry_class") if wgea_match else None),
-                    "organisation_size": (wgea_match.get("organisation_size") if wgea_match else None),
-                    "wgea_lookup_status": (wgea_match.get("wgea_lookup_status") if wgea_match else "not_matched_wgea"),
+                    "source_industry_code_type": wgea_data.get("source_industry_code_type", "ANZSIC"),
+                    "source_industry_code": wgea_data.get("source_industry_code"),
+                    "source_industry_description": wgea_data.get("source_industry_description"),
+                    "source_industry_division": wgea_data.get("source_industry_division"),
+                    "source_industry_subdivision": wgea_data.get("source_industry_subdivision"),
+                    "source_industry_group": wgea_data.get("source_industry_group"),
+                    "source_industry_class": wgea_data.get("source_industry_class"),
+                    "organisation_size": wgea_data.get("organisation_size"),
+                    "wgea_lookup_status": wgea_data.get("wgea_lookup_status", "not_matched_wgea"),
                     "employee_count": None,
                     # =========================================
                     # enrichment placeholder fields
@@ -180,7 +178,6 @@ async def extract_organisations(params: dict):
                     "sustainability_url": None,
                     "partner_type": None,
                     "category": None,
-                    "organisation_size": None,
                     "email": None,
                     "city": None,
                     "state": None,
@@ -345,11 +342,9 @@ async def extract_organisations(params: dict):
                     "organisation_id": cik,
                     "country": "us",
                     "country_code": "US",
-
                     "source_industry_code_type": "SIC",
                     "source_industry_code": sic_code,
                     "source_industry_description": sic_description,
-
                     "website": website,
                     "sustainability_url": None,
                     "partner_type": None,
@@ -359,7 +354,6 @@ async def extract_organisations(params: dict):
                     "email": None,
                     "city": None,
                     "state": None,
-
                     "source": "sec_edgar",
                     "source_url": SEC_SUBMISSIONS_URL.format(cik=cik),
                     "ticker": ticker,
@@ -380,10 +374,7 @@ async def extract_organisations(params: dict):
         # WGEA resource downloads as a ZIP file containing CSV(s)
         zip_file = zipfile.ZipFile(io.BytesIO(response.content))
 
-        csv_filename = next(
-            name for name in zip_file.namelist()
-            if name.lower().endswith(".csv")
-        )
+        csv_filename = next(name for name in zip_file.namelist() if name.lower().endswith(".csv"))
 
         with zip_file.open(csv_filename) as csv_file:
             df = pd.read_csv(
@@ -445,7 +436,6 @@ async def extract_organisations(params: dict):
                     "organisation_id": organisation_id,
                     "country": "au",
                     "country_code": "AU",
-                    "organisation_name": name,
                     "source_industry_code_type": "ANZSIC",
                     "source_industry_code": anzsic_code,
                     "source_industry_description": anzsic_description,
@@ -453,7 +443,6 @@ async def extract_organisations(params: dict):
                     "source_industry_subdivision": row.get("primary_subdivision_name"),
                     "source_industry_group": row.get("primary_group_name"),
                     "source_industry_class": row.get("primary_class_name"),
-
                     "website": None,
                     "sustainability_url": None,
                     "partner_type": None,
@@ -463,7 +452,6 @@ async def extract_organisations(params: dict):
                     "email": None,
                     "city": None,
                     "state": None,
-
                     "source": "data.gov.au_wgea",
                     "source_url": url,
                 }

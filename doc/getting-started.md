@@ -1,4 +1,4 @@
-This guide walks you through setting up and running the project from scratch. No prior experience with Docker, databases, or workflow systems is required — everything is explained.
+This guide walks you through setting up and running the ETL data pipeline from scratch. No prior experience with Docker, databases, or workflow systems is required.
 
 ---
 
@@ -20,12 +20,13 @@ When you run `make start`, Docker starts three containers:
 
 | Container | What it is |
 |---|---|
-| `sandbox_postgres` | A PostgreSQL database server |
-| `sandbox_temporal` | The Temporal workflow server |
-| `sandbox_temporal_ui` | A web dashboard for monitoring workflows |
-| `datacollection_python` | Your Python application (the worker) |
+| `etl-data-pipeline_db` | A PostgreSQL database server |
+| `etl-data-pipeline_temporal` | The Temporal workflow server |
+| `etl-data-pipeline_temporal_ui` | A web dashboard for monitoring workflows |
+| `etl-data-pipeline_app` | The Python Temporal worker |
+| `etl-data-pipeline_frontend` | The Streamlit frontend |
 
-Your code runs inside `datacollection_python`. That container reads your files directly from your computer — so when you save a file in your editor, the container sees the change immediately.
+Your worker code runs inside the `app` service. The container reads your files directly from your computer, so when you save a file in your editor, the container sees the change immediately.
 
 ### What is `uv`?
 
@@ -93,8 +94,8 @@ uv --version
 ## 3. Clone the repository
 
 ```bash
-git clone <repo-url>
-cd datacollection-starter-kit-template
+git clone https://github.com/Gavinwangjh/Gavin_repo.git
+cd Gavin_repo
 ```
 
 ---
@@ -178,28 +179,29 @@ You should see the Temporal dashboard. If you see it, the system is fully operat
 
 ---
 
-## 8. Environment variables — what they are and why they matter
+## 8. Environment variables
 
 The `.env` file contains configuration values that the system needs to connect services together: database credentials, hostnames, ports.
 
-This file is never committed to Git because it can contain sensitive information. That is why only `.env.example` exists in the repository — it is a template with safe default values.
+This file is never committed to Git because it can contain sensitive information. That is why only `.env.example` exists in the repository with safe default values.
 
 Open `.env` and you will see entries like:
 
 ```bash
-POSTGRES_USER=sandbox
-POSTGRES_PASSWORD=sandbox
-DATABASE_URL=postgresql+asyncpg://sandbox:sandbox@postgres:5432/sandbox_db
+DB_USER=sandbox
+DB_PASSWORD=sandbox
+DB_NAME=sandbox_db
+DATABASE_URL=postgresql+asyncpg://sandbox:sandbox@db:5432/sandbox_db
 ```
 
-**Important — two different addresses for the database:**
+**Important: two different addresses for the database:**
 
 | Context | Address to use |
 |---|---|
-| Code running inside Docker | `@postgres:5432` — the container name |
-| Connecting from your PC (DBeaver, terminal) | `@localhost:5432` — exposed port |
+| Code running inside Docker | `@db:5432`, the compose service name |
+| Connecting from your PC | `localhost:5433`, the exposed host port |
 
-Inside Docker, containers talk to each other using their service names (`postgres`, `temporal`). From your PC, you access them via `localhost` because Docker maps the ports.
+Inside Docker, containers talk to each other using their service names (`db`, `temporal`). From your PC, you access them via `localhost` because Docker maps the ports.
 
 You do not need to change anything in `.env` for the default setup to work.
 
@@ -212,7 +214,7 @@ If you want to inspect the database using a GUI tool like DBeaver or TablePlus:
 | Field | Value |
 |---|---|
 | Host | `localhost` |
-| Port | `5432` |
+| Port | `5433` |
 | Database | `sandbox_db` |
 | Username | `sandbox` |
 | Password | `sandbox` |

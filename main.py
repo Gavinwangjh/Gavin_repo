@@ -15,13 +15,12 @@ import structlog
 from temporalio.worker import Worker
 
 from config.logger import setup_logging
-from src.temporal.activities.example_activity import example_activity
+from src.temporal.activities.discover_websites import discover_websites
+from src.temporal.activities.enrich_sustainability import enrich_sustainability
+from src.temporal.activities.enrich_websites import enrich_websites
 from src.temporal.activities.extract_organisations import extract_organisations
 from src.temporal.activities.load_organisations import load_organisations
 from src.temporal.activities.transform_organisations import transform_organisations
-from src.temporal.activities.enrich_websites import enrich_websites
-from src.temporal.activities.discover_websites import discover_websites
-from src.temporal.activities.enrich_sustainability import enrich_sustainability
 
 # AA
 from src.temporal.client import get_temporal_client

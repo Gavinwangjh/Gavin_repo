@@ -49,7 +49,7 @@ class Settings(BaseSettings):
         - database (DB_NAME): Name of the target database.
 
         Example:
-            postgresql://sandbox:secret@postgres:5432/mydb
+            postgresql://sandbox:secret@db:5432/mydb
         """
         return f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 

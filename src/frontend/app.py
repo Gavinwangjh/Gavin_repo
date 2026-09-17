@@ -20,10 +20,7 @@ LOG_DIR = PROJECT_ROOT / "logs"
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if not DATABASE_URL:
-    raise RuntimeError(
-        "Database configuration is missing. "
-        "Expected DATABASE_URL."
-    )
+    raise RuntimeError("Database configuration is missing. Expected DATABASE_URL.")
 TEMPORAL_UI_URL = os.getenv("TEMPORAL_UI_URL", "http://localhost:8080")
 
 WORKING_SOURCES = {
@@ -33,7 +30,7 @@ WORKING_SOURCES = {
 }
 
 ORGANISATIONS_QUERY = text(
-    '''
+    """
     SELECT
       o."OrganisationId" AS "Organisation ID",
       c."CountryName" AS "Country",
@@ -63,7 +60,7 @@ ORGANISATIONS_QUERY = text(
     LEFT JOIN "OrganisationSize" os
       ON o."OrganisationSizeCode" = os."OrganisationSizeCode"
     ORDER BY o."OrganisationId" ASC
-    '''
+    """
 )
 
 
@@ -184,7 +181,6 @@ def render_trigger_tab() -> None:
             st.error(f"Could not start workflow: {exc}")
 
 
-
 def render_records_tab() -> None:
     st.subheader("Loaded organisation records")
 
@@ -205,7 +201,6 @@ def render_records_tab() -> None:
     render_metrics(filtered_df)
 
     display_columns = [
-
         "Organisation ID",
         "Country",
         "Organisation Name",
@@ -220,12 +215,9 @@ def render_records_tab() -> None:
         "Website",
         "Sustainability URL",
         "Email",
-    ]   
-
-    available_columns = [
-        column for column in display_columns
-            if column in filtered_df.columns
     ]
+
+    available_columns = [column for column in display_columns if column in filtered_df.columns]
 
     st.dataframe(
         filtered_df[available_columns],

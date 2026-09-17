@@ -6,7 +6,6 @@ import requests
 from bs4 import BeautifulSoup
 from temporalio import activity
 
-
 COMMON_PATHS = [
     "/sustainability",
     "/sustainability/",

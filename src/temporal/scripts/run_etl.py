@@ -31,7 +31,7 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "--source",
-        choices=["au", "uk","us_sec","au_wgea"],
+        choices=["au", "uk", "us_sec", "au_wgea"],
         required=True,
         help="Data source to run ETL for: au, uk, us_sec",
     )

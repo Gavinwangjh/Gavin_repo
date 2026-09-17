@@ -21,11 +21,7 @@ def safe_int(value):
 
 
 def get_records(transformed_data: dict):
-    return (
-        transformed_data.get("transformed_records")
-        or transformed_data.get("transformed_sample")
-        or []
-    )
+    return transformed_data.get("transformed_records") or transformed_data.get("transformed_sample") or []
 
 
 async def lookup_country_id(conn, country_code):
@@ -139,9 +135,7 @@ async def load_organisations(transformed_data: dict) -> dict:
     async with engine.begin() as conn:
         for record in records:
             organisation_name = clean_text(record.get("organisation_name"))
-            registration_number = clean_text(
-                record.get("organisation_registration_number")
-            )
+            registration_number = clean_text(record.get("organisation_registration_number"))
 
             if not organisation_name:
                 skipped += 1
@@ -154,7 +148,7 @@ async def load_organisations(transformed_data: dict) -> dict:
                     }
                 )
                 continue
-            #duplicate check
+            # duplicate check
             if registration_number:
                 existing_result = await conn.execute(
                     text(
@@ -170,13 +164,13 @@ async def load_organisations(transformed_data: dict) -> dict:
                 if existing_result.fetchone():
                     skipped += 1
                     skipped_records.append(
-                    {
-                        "reason": "duplicate_registration_number",
-                        "organisation_name": organisation_name,
-                        "registration_number": registration_number,
-                        "source": record.get("source"),
-                    }
-                )
+                        {
+                            "reason": "duplicate_registration_number",
+                            "organisation_name": organisation_name,
+                            "registration_number": registration_number,
+                            "source": record.get("source"),
+                        }
+                    )
                     continue
             country_id = await lookup_country_id(
                 conn,
@@ -200,7 +194,6 @@ async def load_organisations(transformed_data: dict) -> dict:
 
             result = await conn.execute(
                 text(
-
                     """
                     INSERT INTO "Organisations" (
                     "CountryId",
@@ -254,7 +247,9 @@ async def load_organisations(transformed_data: dict) -> dict:
                     "organisation_size_code": organisation_size_code,
                     "organisation_name": organisation_name,
                     "primary_organisation_name": clean_text(record.get("primary_organisation_name")),
-                    "partner_type_assignment_method": clean_text(record.get("partner_type_assignment_method")),
+                    "partner_type_assignment_method": clean_text(
+                        record.get("partner_type_assignment_method")
+                    ),
                     "company_name": clean_text(record.get("company_name")),
                     "registration_number": registration_number,
                     "city_name": clean_text(record.get("city_name")),

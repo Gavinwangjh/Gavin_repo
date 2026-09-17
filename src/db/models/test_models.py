@@ -1,5 +1,5 @@
 """
-Example database models for the template repository.
+Example database model retained for migration compatibility.
 """
 
 from sqlalchemy import Column, DateTime, Integer, String, func

@@ -1,4 +1,4 @@
-# Makefile - in the root of the project, to build the project and run tests
+# Makefile - build, run, and test the ETL data pipeline system
 #
 # Use: make <target>
 # Command list: make help
@@ -17,7 +17,7 @@ TEMPORAL_SERVICE = temporal
 
 # ─── Setup ───────────────────────────────────────────────────
 
-setup:          ## Initial setup — run once after cloning
+setup:          ## Initial setup - run once after cloning
 	@echo "Checking dependencies..."
 	@command -v uv >/dev/null 2>&1 || \
 		(echo "ERROR: uv is not installed. Install it: https://docs.astral.sh/uv/getting-started/installation/"; exit 1)
@@ -28,10 +28,10 @@ setup:          ## Initial setup — run once after cloning
 		echo ""; \
 		echo "=== INITIAL PROJECT SETUP ==="; \
 		echo ""; \
-		read -p "  Project name (e.g. unisa-07): " pname; \
+		read -p "  Project name (e.g. etl-data-pipeline): " pname; \
 		while [ -z "$$pname" ]; do \
 			echo "  Project name cannot be empty."; \
-			read -p "  Project name (e.g. unisa-07): " pname; \
+			read -p "  Project name (e.g. etl-data-pipeline): " pname; \
 		done; \
 		read -p "  External DB port [5432]: " pport; \
 		pport=$${pport:-5432}; \
@@ -53,7 +53,7 @@ setup:          ## Initial setup — run once after cloning
 		echo ""; \
 		echo "Setup complete."; \
 	else \
-		echo ".env already exists — skipping interactive setup."; \
+		echo ".env already exists - skipping interactive setup."; \
 	fi
 	@echo "Installing Python dependencies..."
 	@uv sync
@@ -74,7 +74,7 @@ start:          ## Start all services
 	$(COMPOSE) up -d
 	@echo ""
 	@echo "  Temporal UI -> http://localhost:$$(grep TEMPORAL_UI_PORT .env | cut -d= -f2)"
-	@echo "  DB          -> localhost:$$(grep ^DB_PORT .env | cut -d= -f2)"
+	@echo "  DB          -> localhost:$$(grep ^EXTERNAL_DB_PORT .env | cut -d= -f2)"
 	@echo "  Logs        -> make logs-app"
 
 
@@ -142,8 +142,8 @@ shell-db:       ## Open psql shell inside database container
 clean:          ## Remove containers and local images
 	$(COMPOSE) down --rmi local
 
-reset:          ## ⚠ REMOVE ALL DATA - delete all containers and data
-	@echo "⚠ This will remove ALL from the database. Continue? [y/N]"
+reset:          ## DANGER: remove all containers and database data
+	@echo "This will remove ALL data from the database. Continue? [y/N]"
 	@read ans && [ $${ans:-N} = y ] || exit 1
 	$(COMPOSE) down -v --remove-orphans
-	@echo "✓ Reset completed. Run: make start && make migrate"
+	@echo "Reset completed. Run: make start && make migrate"

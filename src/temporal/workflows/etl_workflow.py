@@ -3,12 +3,12 @@ from datetime import timedelta
 from temporalio import workflow
 
 with workflow.unsafe.imports_passed_through():
-    from src.temporal.activities.extract_organisations import extract_organisations
-    from src.temporal.activities.transform_organisations import transform_organisations
-    from src.temporal.activities.enrich_websites import enrich_websites
     from src.temporal.activities.discover_websites import discover_websites
     from src.temporal.activities.enrich_sustainability import enrich_sustainability
+    from src.temporal.activities.enrich_websites import enrich_websites
+    from src.temporal.activities.extract_organisations import extract_organisations
     from src.temporal.activities.load_organisations import load_organisations
+    from src.temporal.activities.transform_organisations import transform_organisations
 
 
 @workflow.defn
@@ -52,10 +52,8 @@ class ETLWorkflow:
             sustainability_data,
             start_to_close_timeout=timedelta(minutes=10),
         )
-        loaded_data = await workflow.execute_activity(
+        return await workflow.execute_activity(
             load_organisations,
             transformed_data,
             start_to_close_timeout=timedelta(minutes=10),
         )
-
-        return loaded_data

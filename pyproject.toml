@@ -1,7 +1,7 @@
 [project]
-name = "datacollection-starter-kit-template"
+name = "etl-data-pipeline-system"
 version = "0.1.0"
-description = "Add your description here"
+description = "Temporal-based ETL data pipeline for organisation data collection and enrichment"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
